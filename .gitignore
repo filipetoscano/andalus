@@ -1,0 +1,18 @@
+# Root ignores
+/.nuget/
+/data/
+/nupkg/
+/sample/
+
+# Specific
+
+
+# Global ignores
+bin/
+obj/
+.vs/
+*.csproj.user
+*.pubxml.user
+*.sqlproj.user
+
+# eof

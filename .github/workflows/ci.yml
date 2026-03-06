@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+    types: [ opened, synchronize, reopened ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET SDK 10.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Cache
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/cache@v4
+        with:
+          path: 
+            .nuget
+          key: nuget
+
+      - name: Run ci.sh
+        run: ./cicd/ci.sh
