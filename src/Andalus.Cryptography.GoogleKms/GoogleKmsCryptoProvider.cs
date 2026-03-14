@@ -113,13 +113,12 @@ public class GoogleKmsCryptoProvider : ICryptoProvider
     public async Task<SignResult> SignHashAsync(
         KeyReference key,
         ReadOnlyMemory<byte> hash,
-        HashAlgorithmName? hashAlgorithm,
+        HashAlgorithmName hashAlgorithm,
         CancellationToken cancellationToken = default )
     {
         var versionName = CryptoKeyVersionName.Parse( key.KeyId );
-        var m = key.KeyType.Resolve();
 
-        var digest = WrapDigest( hash, hashAlgorithm ?? m.HashAlgorithmName );
+        var digest = WrapDigest( hash, hashAlgorithm );
 
         var response = await _kms.AsymmetricSignAsync(
             versionName,
@@ -139,11 +138,11 @@ public class GoogleKmsCryptoProvider : ICryptoProvider
         KeyReference key,
         ReadOnlyMemory<byte> hash,
         ReadOnlyMemory<byte> signature,
-        HashAlgorithmName? hashAlgorithm = null,
+        HashAlgorithmName hashAlgorithm,
         CancellationToken cancellationToken = default )
     {
         var versionName = CryptoKeyVersionName.Parse( key.KeyId );
-        var m = key.KeyType.Resolve();
+        var family = key.KeyType.Family();
 
         // Retrieve the public key from KMS
         var publicKey = await _kms.GetPublicKeyAsync(
@@ -152,10 +151,7 @@ public class GoogleKmsCryptoProvider : ICryptoProvider
 
         var pemBytes = ConvertPemToBytes( publicKey.Pem );
 
-        // Determine key type from the algorithm
-        var algorithm = publicKey.Algorithm;
-
-        if ( IsEcAlgorithm( algorithm ) )
+        if ( family == KeyFamily.Ecdsa )
         {
             using var ecdsa = ECDsa.Create();
             ecdsa.ImportSubjectPublicKeyInfo( pemBytes, out _ );
@@ -173,22 +169,9 @@ public class GoogleKmsCryptoProvider : ICryptoProvider
             return rsa.VerifyHash(
                 hash.ToArray(),
                 signature.ToArray(),
-                hashAlgorithm ?? m.HashAlgorithmName,
+                hashAlgorithm,
                 RSASignaturePadding.Pkcs1 );
         }
-    }
-
-
-    /// <summary />
-    private static bool IsEcAlgorithm( CryptoKeyVersion.Types.CryptoKeyVersionAlgorithm algorithm )
-    {
-        return algorithm switch
-        {
-            CryptoKeyVersion.Types.CryptoKeyVersionAlgorithm.EcSignP256Sha256 => true,
-            CryptoKeyVersion.Types.CryptoKeyVersionAlgorithm.EcSignP384Sha384 => true,
-            CryptoKeyVersion.Types.CryptoKeyVersionAlgorithm.EcSignSecp256K1Sha256 => true,
-            _ => false,
-        };
     }
 
 
@@ -201,9 +184,9 @@ public class GoogleKmsCryptoProvider : ICryptoProvider
             KeyType.EcdsaP384 => CryptoKeyVersion.Types.CryptoKeyVersionAlgorithm.EcSignP384Sha384,
             KeyType.EcdsaSecp256k1 => CryptoKeyVersion.Types.CryptoKeyVersionAlgorithm.EcSignSecp256K1Sha256,
 
-            KeyType.RsaSha256 => CryptoKeyVersion.Types.CryptoKeyVersionAlgorithm.RsaSignPkcs12048Sha256,
-            KeyType.RsaSha384 => CryptoKeyVersion.Types.CryptoKeyVersionAlgorithm.RsaSignPkcs13072Sha256,
-            KeyType.RsaSha512 => CryptoKeyVersion.Types.CryptoKeyVersionAlgorithm.RsaSignPkcs14096Sha512,
+            KeyType.Rsa2048 => CryptoKeyVersion.Types.CryptoKeyVersionAlgorithm.RsaSignPkcs12048Sha256,
+            KeyType.Rsa3072 => CryptoKeyVersion.Types.CryptoKeyVersionAlgorithm.RsaSignPkcs13072Sha256,
+            KeyType.Rsa4096 => CryptoKeyVersion.Types.CryptoKeyVersionAlgorithm.RsaSignPkcs14096Sha512,
 
             _ => throw new NotSupportedException( $"Key type '{keyType}' is not supported." )
         };

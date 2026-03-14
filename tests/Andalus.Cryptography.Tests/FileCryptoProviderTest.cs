@@ -11,9 +11,9 @@ public class FileCryptoProviderTest
     [InlineData( KeyType.EcdsaP256 )]
     [InlineData( KeyType.EcdsaP384 )]
     [InlineData( KeyType.EcdsaP521 )]
-    [InlineData( KeyType.RsaSha256 )]
-    [InlineData( KeyType.RsaSha384 )]
-    [InlineData( KeyType.RsaSha512 )]
+    [InlineData( KeyType.Rsa2048 )]
+    [InlineData( KeyType.Rsa3072 )]
+    [InlineData( KeyType.Rsa4096 )]
     public async Task Roundtrip( KeyType keyType )
     {
         var p = new FileCryptoProvider( new FileCryptoProviderOptions()
@@ -25,7 +25,7 @@ public class FileCryptoProviderTest
 
             KeyCreationOptions()
         {
-            KeyName = nameof( Roundtrip) + "-" + keyType.ToString(),
+            KeyName = nameof( Roundtrip ) + "-" + keyType.ToString(),
             KeyType = keyType,
             Exportable = false,
             MomentExpiry = DateTime.MaxValue,
@@ -38,14 +38,14 @@ public class FileCryptoProviderTest
         var digest = new byte[ 32 ];
         Random.Shared.NextBytes( digest );
 
-        var sr = await p.SignHashAsync( keyRef, digest );
+        var sr = await p.SignHashAsync( keyRef, digest, HashAlgorithmName.SHA256 );
         var sig = sr.Signature;
 
 
         /*
          * 
          */
-        var ok = await p.VerifyHashAsync( keyRef, digest, sig );
+        var ok = await p.VerifyHashAsync( keyRef, digest, sig, HashAlgorithmName.SHA256 );
         Assert.True( ok );
 
 

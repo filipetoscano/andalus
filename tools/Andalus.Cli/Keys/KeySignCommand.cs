@@ -34,7 +34,7 @@ public class KeySignCommand
     public async Task<int> OnExecuteAsync()
     {
         var hash = Convert.FromBase64String( this.Hash! );
-        var sr = await _crypto.SignHashAsync( this.KeyReference!, hash );
+        var sr = await _crypto.SignHashAsync( this.KeyReference!, hash, HashAlgorithmName.SHA256 );
 
         Console.WriteLine( Convert.ToBase64String( sr.Signature ) );
 

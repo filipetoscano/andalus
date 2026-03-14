@@ -4,7 +4,7 @@
 public enum KeyFamily
 {
     /// <summary />
-    Ecdsa,
+    Ecdsa = 1,
 
     /// <summary />
     Rsa,

@@ -35,9 +35,9 @@ public class KeyVaultCryptoProvider : ICryptoProvider
             KeyType.EcdsaP521 => await CreateEcKeyAsync( options, KeyCurveName.P521, cancellationToken ),
             KeyType.EcdsaSecp256k1 => await CreateEcKeyAsync( options, KeyCurveName.P256K, cancellationToken ),
 
-            KeyType.RsaSha256 => await CreateRsaKeyAsync( options, cancellationToken ),
-            KeyType.RsaSha384 => await CreateRsaKeyAsync( options, cancellationToken ),
-            KeyType.RsaSha512 => await CreateRsaKeyAsync( options, cancellationToken ),
+            KeyType.Rsa2048 => await CreateRsaKeyAsync( options, 2048, cancellationToken ),
+            KeyType.Rsa3072 => await CreateRsaKeyAsync( options, 3072, cancellationToken ),
+            KeyType.Rsa4096 => await CreateRsaKeyAsync( options, 4096, cancellationToken ),
 
             _ => throw new NotSupportedException( $"Key type '{options.KeyType}' is not supported." )
         };
@@ -96,10 +96,10 @@ public class KeyVaultCryptoProvider : ICryptoProvider
     public async Task<SignResult> SignHashAsync(
         KeyReference key,
         ReadOnlyMemory<byte> hash,
-        HashAlgorithmName? hashAlgorithm = null,
+        HashAlgorithmName hashAlgorithm,
         CancellationToken cancellationToken = default )
     {
-        var m = key.KeyType.Resolve();
+        var family = key.KeyType.Family();
         var bytes = hash.ToArray();
 
 
@@ -116,7 +116,7 @@ public class KeyVaultCryptoProvider : ICryptoProvider
          */
         byte[] signature;
 
-        if ( m.KeyFamily == KeyFamily.Ecdsa )
+        if ( family == KeyFamily.Ecdsa )
             signature = SignatureFormat.ConvertIeeeP1363ToDer( result.Signature );
         else
             signature = result.Signature;
@@ -134,14 +134,14 @@ public class KeyVaultCryptoProvider : ICryptoProvider
         KeyReference key,
         ReadOnlyMemory<byte> hash,
         ReadOnlyMemory<byte> signature,
-        HashAlgorithmName? hashAlgorithm = null,
+        HashAlgorithmName hashAlgorithm,
         CancellationToken cancellationToken = default )
     {
-        var m = key.KeyType.Resolve();
+        var family = key.KeyType.Family();
         var hashBytes = hash.ToArray();
         var signBytes = signature.ToArray();
 
-        if ( m.KeyFamily == KeyFamily.Ecdsa )
+        if ( family == KeyFamily.Ecdsa )
             signBytes = SignatureFormat.ConvertDerToIeeeP1363( signBytes );
 
 
@@ -179,11 +179,12 @@ public class KeyVaultCryptoProvider : ICryptoProvider
     /// <summary />
     private async Task<KeyVaultKey> CreateRsaKeyAsync(
         KeyCreationOptions options,
+        int keySize,
         CancellationToken cancellationToken )
     {
         var rsaOptions = new CreateRsaKeyOptions( options.KeyName, hardwareProtected: true )
         {
-            KeySize = options.RsaKeySizeBits ?? 2048,
+            KeySize = keySize,
             Enabled = true,
             ExpiresOn = options.MomentExpiry,
             Exportable = options.Exportable,

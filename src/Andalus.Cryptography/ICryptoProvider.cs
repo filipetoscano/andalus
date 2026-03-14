@@ -66,7 +66,7 @@ public interface ICryptoProvider
     Task<SignResult> SignHashAsync(
         KeyReference key,
         ReadOnlyMemory<byte> hash,
-        HashAlgorithmName? hashAlgorithm = null,
+        HashAlgorithmName hashAlgorithm,
         CancellationToken cancellationToken = default );
 
 
@@ -82,6 +82,6 @@ public interface ICryptoProvider
         KeyReference key,
         ReadOnlyMemory<byte> hash,
         ReadOnlyMemory<byte> signature,
-        HashAlgorithmName? hashAlgorithm = null,
+        HashAlgorithmName hashAlgorithm,
         CancellationToken cancellationToken = default );
 }

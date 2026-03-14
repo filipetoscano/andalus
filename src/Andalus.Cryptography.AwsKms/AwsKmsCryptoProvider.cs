@@ -82,7 +82,7 @@ public class AwsKmsCryptoProvider : ICryptoProvider
     public async Task<SignResult> SignHashAsync(
         KeyReference key,
         ReadOnlyMemory<byte> hash,
-        HashAlgorithmName? hashAlgorithm = null,
+        HashAlgorithmName hashAlgorithm,
         CancellationToken cancellationToken = default )
     {
         var algorithm = MapSigningAlgorithm( key.KeyType, hashAlgorithm );
@@ -110,7 +110,7 @@ public class AwsKmsCryptoProvider : ICryptoProvider
         KeyReference key,
         ReadOnlyMemory<byte> hash,
         ReadOnlyMemory<byte> signature,
-        HashAlgorithmName? hashAlgorithm = null,
+        HashAlgorithmName hashAlgorithm,
         CancellationToken cancellationToken = default )
     {
         var algorithm = MapSigningAlgorithm( key.KeyType, hashAlgorithm );
@@ -140,9 +140,9 @@ public class AwsKmsCryptoProvider : ICryptoProvider
             KeyType.EcdsaP521 => KeySpec.ECC_NIST_P521,
             KeyType.EcdsaSecp256k1 => KeySpec.ECC_SECG_P256K1,
 
-            KeyType.RsaSha256 => KeySpec.RSA_2048,
-            KeyType.RsaSha384 => KeySpec.RSA_3072,
-            KeyType.RsaSha512 => KeySpec.RSA_4096,
+            KeyType.Rsa2048 => KeySpec.RSA_2048,
+            KeyType.Rsa3072 => KeySpec.RSA_3072,
+            KeyType.Rsa4096 => KeySpec.RSA_4096,
 
             _ => throw new NotSupportedException( $"Key type '{keyType}' is not supported." )
         };
@@ -150,35 +150,32 @@ public class AwsKmsCryptoProvider : ICryptoProvider
 
 
     /// <summary />
-    private static SigningAlgorithmSpec MapSigningAlgorithm( KeyType keyType, HashAlgorithmName? hashAlgorithm )
+    private static SigningAlgorithmSpec MapSigningAlgorithm( KeyType keyType, HashAlgorithmName hashAlgorithm )
     {
-        var m = keyType.Resolve();
-        var han = hashAlgorithm ?? m.HashAlgorithmName;
+        var family = keyType.Family();
+        var han = hashAlgorithm.Name;
 
-        if ( m.KeyFamily == KeyFamily.Ecdsa )
+        if ( family == KeyFamily.Rsa )
         {
-            return han.Name switch
-            {
-                "SHA256" => SigningAlgorithmSpec.ECDSA_SHA_256,
-                "SHA384" => SigningAlgorithmSpec.ECDSA_SHA_384,
-                "SHA512" => SigningAlgorithmSpec.ECDSA_SHA_512,
-
-                _ => throw new NotSupportedException( $"Hash algorithm '{han.Name}' is not supported for ECDsa." )
-            };
-        }
-
-        if ( m.KeyFamily == KeyFamily.Rsa )
-        {
-            return han.Name switch
+            return han switch
             {
                 "SHA256" => SigningAlgorithmSpec.RSASSA_PKCS1_V1_5_SHA_256,
                 "SHA384" => SigningAlgorithmSpec.RSASSA_PKCS1_V1_5_SHA_384,
                 "SHA512" => SigningAlgorithmSpec.RSASSA_PKCS1_V1_5_SHA_512,
 
-                _ => throw new NotSupportedException( $"Hash algorithm '{han.Name}' is not supported for RSA." )
+                _ => throw new NotSupportedException( $"Hash algorithm '{han}' is not supported for RSA." )
             };
         }
+        else
+        {
+            return han switch
+            {
+                "SHA256" => SigningAlgorithmSpec.ECDSA_SHA_256,
+                "SHA384" => SigningAlgorithmSpec.ECDSA_SHA_384,
+                "SHA512" => SigningAlgorithmSpec.ECDSA_SHA_512,
 
-        throw new NotSupportedException( $"No support for key family '{m.KeyFamily}'" );
+                _ => throw new NotSupportedException( $"Hash algorithm '{han}' is not supported for ECDsa." )
+            };
+        }
     }
 };

@@ -4,23 +4,31 @@
 public enum KeyType
 {
     /// <summary />
-    RsaSha256 = 1,
+    Rsa2048 = 1,
 
     /// <summary />
-    RsaSha384,
+    Rsa3072,
 
     /// <summary />
-    RsaSha512,
+    Rsa4096,
 
-    /// <summary />
+    /// <summary>
+    /// NIST Prime 256
+    /// </summary>
     EcdsaP256,
 
-    /// <summary />
+    /// <summary>
+    /// NIST Prime 384
+    /// </summary>
     EcdsaP384,
 
-    /// <summary />
+    /// <summary>
+    /// NIST Prime 521
+    /// </summary>
     EcdsaP521,
 
-    /// <summary />
+    /// <summary>
+    /// Standards for Efficient Cryptography
+    /// </summary>
     EcdsaSecp256k1,
 }

@@ -41,7 +41,7 @@ public class KeyVerifyCommand
         var hash = Convert.FromBase64String( this.Hash! );
         var sign = Convert.FromBase64String( this.Signature! );
 
-        var isValid = await _crypto.VerifyHashAsync( this.KeyReference!, hash, sign );
+        var isValid = await _crypto.VerifyHashAsync( this.KeyReference!, hash, sign, HashAlgorithmName.SHA256 );
 
         if ( isValid == false )
         {

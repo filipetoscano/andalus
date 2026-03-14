@@ -14,11 +14,6 @@ public sealed class KeyCreationOptions
     public required string KeyName { get; init; }
 
     /// <summary>
-    /// RSA modulus size. Ignored for EC keys.
-    /// </summary>
-    public int? RsaKeySizeBits { get; init; }
-
-    /// <summary>
     /// Whether the private key can be exported. Most production
     /// HSMs should set this to false.
     /// </summary>
