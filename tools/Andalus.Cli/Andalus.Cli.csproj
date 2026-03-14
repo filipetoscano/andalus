@@ -20,6 +20,7 @@
     <ProjectReference Include="..\..\src\Andalus.Cryptography.GoogleKms\Andalus.Cryptography.GoogleKms.csproj" />
     <ProjectReference Include="..\..\src\Andalus.Cryptography.KeyVault\Andalus.Cryptography.KeyVault.csproj" />
     <ProjectReference Include="..\..\src\Andalus.Cryptography.Pkcs11\Andalus.Cryptography.Pkcs11.csproj" />
+    <ProjectReference Include="..\..\src\Andalus.Cryptography.Xml\Andalus.Cryptography.Xml.csproj" />
   </ItemGroup>
 
 </Project>

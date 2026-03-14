@@ -15,12 +15,12 @@
     <Project Path="src/Andalus.Cryptography.GoogleKms/Andalus.Cryptography.GoogleKms.csproj" />
     <Project Path="src/Andalus.Cryptography.KeyVault/Andalus.Cryptography.KeyVault.csproj" Id="8b69e290-1d61-4b9a-b2cd-ab18b81b63e7" />
     <Project Path="src/Andalus.Cryptography.Pkcs11/Andalus.Cryptography.Pkcs11.csproj" />
+    <Project Path="src/Andalus.Cryptography.Xml/Andalus.Cryptography.Xml.csproj" />
     <Project Path="src/Andalus.Cryptography/Andalus.Cryptography.csproj" Id="41eb5df4-dc54-417d-99f0-d853f25a2429" />
-    <Project Path="src/Andalus.Xml/Andalus.Xml.csproj" Id="79181870-3b42-4f6c-a170-1ccfe52e0c8c" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Andalus.Cryptography.Tests/Andalus.Cryptography.Tests.csproj" Id="7d9c1434-91fd-42a0-b72e-b8772bd9a6b7" />
-    <Project Path="tests/Andalus.Xml.Tests/Andalus.Xml.Tests.csproj" Id="5962e838-716a-4472-adbf-13cb4e406cfb" />
+    <Project Path="tests/Andalus.Cryptography.Xml.Tests/Andalus.Cryptography.Xml.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/Andalus.Cli/Andalus.Cli.csproj" Id="f48a700b-f607-4c84-b7db-129d63ab7c4e" />

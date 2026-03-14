@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Andalus.Xml\Andalus.Xml.csproj" />
+    <ProjectReference Include="..\..\src\Andalus.Cryptography.Xml\Andalus.Cryptography.Xml.csproj" />
   </ItemGroup>
 
   <ItemGroup>
