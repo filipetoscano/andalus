@@ -138,7 +138,7 @@ public class Pkcs11CryptoProvider : ICryptoProvider, IDisposable
 
         // CKM_ECDSA returns IEEE P1363; normalize to DER
         byte[] signature = key.KeyType.Family() == KeyFamily.Ecdsa
-            ? SignatureFormat.ConvertIeeeP1363ToDer( raw )
+            ? SignatureFormat.ConvertIeeeP1363ToDer( raw, key.KeyType.CurveOrder() )
             : raw;
 
         return Task.FromResult( new SignResult
@@ -164,7 +164,7 @@ public class Pkcs11CryptoProvider : ICryptoProvider, IDisposable
 
         // CKM_ECDSA expects IEEE P1363; input is DER
         byte[] signBytes = key.KeyType.Family() == KeyFamily.Ecdsa
-            ? SignatureFormat.ConvertDerToIeeeP1363( signature.ToArray() )
+            ? SignatureFormat.ConvertDerToIeeeP1363( signature.ToArray(), key.KeyType.CurveOrder() )
             : signature.ToArray();
 
         using var mechanism = _factories.MechanismFactory.Create( ckm );

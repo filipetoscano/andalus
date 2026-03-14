@@ -117,7 +117,7 @@ public class KeyVaultCryptoProvider : ICryptoProvider
         byte[] signature;
 
         if ( family == KeyFamily.Ecdsa )
-            signature = SignatureFormat.ConvertIeeeP1363ToDer( result.Signature );
+            signature = SignatureFormat.ConvertIeeeP1363ToDer( result.Signature, key.KeyType.CurveOrder() );
         else
             signature = result.Signature;
 
@@ -142,7 +142,7 @@ public class KeyVaultCryptoProvider : ICryptoProvider
         var signBytes = signature.ToArray();
 
         if ( family == KeyFamily.Ecdsa )
-            signBytes = SignatureFormat.ConvertDerToIeeeP1363( signBytes );
+            signBytes = SignatureFormat.ConvertDerToIeeeP1363( signBytes, key.KeyType.CurveOrder() );
 
 
         /*
