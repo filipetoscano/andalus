@@ -70,6 +70,13 @@ public class KeyVaultCryptoProvider : ICryptoProvider
     }
 
 
+    /// <inheritdoc />
+    public Task<KeyReference> ImportKeyPairAsync( KeyCreationOptions options, KeyPair keyPair, CancellationToken cancellationToken = default )
+    {
+        throw new NotImplementedException();
+    }
+
+
     private async Task<KeyVaultKey> CreateRsaKeyAsync(
         KeyCreationOptions options,
         CancellationToken cancellationToken )
@@ -88,12 +95,10 @@ public class KeyVaultCryptoProvider : ICryptoProvider
     }
 
 
-    private static void ApplyMetadata( CreateKeyOptions keyOptions, IDictionary<string, string> metadata )
+    /// <inheritdoc />
+    public Task RemoveKeyPairAsync( string keyId, CancellationToken cancellationToken = default )
     {
-        foreach ( var (key, value) in metadata )
-        {
-            keyOptions.Tags[ key ] = value;
-        }
+        throw new NotImplementedException();
     }
 
 
@@ -137,5 +142,15 @@ public class KeyVaultCryptoProvider : ICryptoProvider
         var result = await client.VerifyAsync( SignatureAlgorithm.ES256K, hashBytes, signBytes, cancellationToken );
 
         return result.IsValid;
+    }
+
+
+    /// <summary />
+    private static void ApplyMetadata( CreateKeyOptions keyOptions, IDictionary<string, string> metadata )
+    {
+        foreach ( var (key, value) in metadata )
+        {
+            keyOptions.Tags[ key ] = value;
+        }
     }
 }

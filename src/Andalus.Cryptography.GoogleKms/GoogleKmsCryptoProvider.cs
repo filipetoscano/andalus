@@ -88,6 +88,13 @@ public class GoogleKmsCryptoProvider : ICryptoProvider
 
 
     /// <inheritdoc />
+    public Task<KeyReference> ImportKeyPairAsync( KeyCreationOptions options, KeyPair keyPair, CancellationToken cancellationToken = default )
+    {
+        throw new NotImplementedException();
+    }
+
+
+    /// <inheritdoc />
     public async Task<SignResult> SignHashAsync(
         string keyId,
         ReadOnlyMemory<byte> hash,
@@ -156,6 +163,15 @@ public class GoogleKmsCryptoProvider : ICryptoProvider
         }
     }
 
+
+    /// <inheritdoc />
+    public Task RemoveKeyPairAsync( string keyId, CancellationToken cancellationToken = default )
+    {
+        throw new NotImplementedException();
+    }
+
+
+    /// <summary />
     private static bool IsEcAlgorithm( CryptoKeyVersion.Types.CryptoKeyVersionAlgorithm algorithm )
     {
         return algorithm switch
@@ -166,7 +182,6 @@ public class GoogleKmsCryptoProvider : ICryptoProvider
             _ => false,
         };
     }
-
 
 
     /// <summary />

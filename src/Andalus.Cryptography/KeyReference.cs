@@ -24,10 +24,4 @@ public sealed class KeyReference
     /// Available locally for verification and KeyInfo embedding.
     /// </summary>
     public required byte[] PublicKey { get; init; }
-
-    /// <summary>
-    /// Optional certificate chain associated with this key (leaf-first).
-    /// Null if the HSM only stores a bare key pair.
-    /// </summary>
-    public IReadOnlyList<byte[]>? CertificateChain { get; init; }
 }

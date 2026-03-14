@@ -23,7 +23,8 @@ public class FileCryptoProvider : ICryptoProvider
     /// <inheritdoc />
     public async Task<KeyReference> CreateKeyPairAsync( KeyCreationOptions options, CancellationToken cancellationToken = default )
     {
-        var keyDir = Path.Combine( _root, options.KeyName );
+        var keyId = Guid.NewGuid().ToString();
+        var keyDir = Path.Combine( _root, keyId );
         Directory.CreateDirectory( keyDir );
 
         KeyPair kp = options.KeyType switch
@@ -49,15 +50,54 @@ public class FileCryptoProvider : ICryptoProvider
             Tags = new Dictionary<string, string>( options.Metadata ),
         };
 
-        await File.WriteAllTextAsync( GetPrivateKeyPath( options.KeyName ), kp.PrivatePem, cancellationToken );
-        await File.WriteAllTextAsync( GetPublicKeyPath( options.KeyName ), kp.PublicPem, cancellationToken );
-        await WriteMetadataAsync( options.KeyName, metadata, cancellationToken );
+        await File.WriteAllTextAsync( GetPrivateKeyPath( keyId ), kp.PrivatePem, cancellationToken );
+        await File.WriteAllTextAsync( GetPublicKeyPath( keyId ), kp.PublicPem, cancellationToken );
+        await WriteMetadataAsync( keyId, metadata, cancellationToken );
+
+
+        /*
+         * 
+         */
+        //var publicKey = Convert.FromBase64String( PemEncoding.Find( kp.PublicPem ).Base64Data.ToString() );
 
         return new KeyReference()
         {
-            KeyId = options.KeyName,
+            KeyId = keyId,
             KeyType = options.KeyType,
-            PublicKey = [],   // TODO: From PEM
+            PublicKey = [],
+        };
+    }
+
+
+    /// <inheritdoc />
+    public async Task<KeyReference> ImportKeyPairAsync(
+        KeyCreationOptions options,
+        KeyPair keyPair,
+        CancellationToken cancellationToken = default )
+    {
+        var keyId = Guid.NewGuid().ToString();
+        var keyDir = Path.Combine( _root, keyId );
+        Directory.CreateDirectory( keyDir );
+
+        var metadata = new KeyMetadata()
+        {
+            KeyName = options.KeyName,
+            KeyFamily = keyPair.KeyFamily,
+            KeyType = options.KeyType,
+            MomentCreated = DateTimeOffset.UtcNow,
+            MomentExpiry = options.MomentExpiry,
+            Tags = new Dictionary<string, string>( options.Metadata ),
+        };
+
+        await File.WriteAllTextAsync( GetPrivateKeyPath( keyId ), keyPair.PrivatePem, cancellationToken );
+        await File.WriteAllTextAsync( GetPublicKeyPath( keyId ), keyPair.PublicPem, cancellationToken );
+        await WriteMetadataAsync( keyId, metadata, cancellationToken );
+
+        return new KeyReference()
+        {
+            KeyId = keyId,
+            KeyType = options.KeyType,
+            PublicKey = [],
         };
     }
 
@@ -135,6 +175,19 @@ public class FileCryptoProvider : ICryptoProvider
     }
 
 
+
+    /// <inheritdoc />
+    public Task RemoveKeyPairAsync( string keyId, CancellationToken cancellationToken = default )
+    {
+        var keyDir = Path.Combine( _root, keyId );
+        Directory.Delete( keyDir, true );
+
+        return Task.CompletedTask;
+    }
+
+
+
+
     /// <summary />
     private static KeyPair CreateEcKey( ECCurve curve, string keyDir )
     {
@@ -209,20 +262,6 @@ public class FileCryptoProvider : ICryptoProvider
         WriteIndented = true,
         Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() },
     };
-
-
-    /// <summary />
-    private struct KeyPair
-    {
-        /// <summary />
-        public required KeyFamily KeyFamily { get; set; }
-
-        /// <summary />
-        public required string PublicPem { get; set; }
-
-        /// <summary />
-        public required string PrivatePem { get; set; }
-    }
 
 
     /// <summary />

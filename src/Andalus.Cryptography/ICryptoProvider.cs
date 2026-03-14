@@ -18,6 +18,13 @@ public interface ICryptoProvider
         CancellationToken cancellationToken = default );
 
 
+    /// <summary />
+    Task<KeyReference> ImportKeyPairAsync(
+        KeyCreationOptions options,
+        KeyPair keyPair,
+        CancellationToken cancellationToken = default );
+
+
     /// <summary>
     /// Signs a pre-computed hash remotely. The hash is computed locally;
     /// only the compact digest crosses the wire.
@@ -45,5 +52,16 @@ public interface ICryptoProvider
         ReadOnlyMemory<byte> hash,
         ReadOnlyMemory<byte> signature,
         HashAlgorithmName hashAlgorithm,
+        CancellationToken cancellationToken = default );
+
+
+    /// <summary>
+    /// Removes a key pair from an HSM.
+    /// </summary>
+    /// <param name="keyId">Key identifier.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task RemoveKeyPairAsync(
+        string keyId,
         CancellationToken cancellationToken = default );
 }

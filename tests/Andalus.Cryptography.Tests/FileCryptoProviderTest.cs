@@ -6,20 +6,27 @@ namespace Andalus.Cryptography.Tests;
 public class FileCryptoProviderTest
 {
     /// <summary />
-    [Fact]
-    public async Task Roundtrip()
+    [Theory]
+    [InlineData( KeyType.EcdsaSecp256k1 )]
+    [InlineData( KeyType.EcdsaP256 )]
+    [InlineData( KeyType.EcdsaP384 )]
+    [InlineData( KeyType.EcdsaP521 )]
+    [InlineData( KeyType.RsaSha256 )]
+    [InlineData( KeyType.RsaSha384 )]
+    [InlineData( KeyType.RsaSha512 )]
+    public async Task Roundtrip( KeyType keyType )
     {
         var p = new FileCryptoProvider( new FileCryptoProviderOptions()
         {
             RootDirectory = Path.Combine( Environment.CurrentDirectory, "tests" ),
         } );
 
-        var key = await p.CreateKeyPairAsync( new 
-            
+        var key = await p.CreateKeyPairAsync( new
+
             KeyCreationOptions()
         {
-            KeyName = Guid.NewGuid().ToString(),
-            KeyType = KeyType.EcdsaP256,
+            KeyName = nameof( Roundtrip) + "-" + keyType.ToString(),
+            KeyType = keyType,
             Exportable = false,
             MomentExpiry = DateTime.MaxValue,
         } );
@@ -42,5 +49,11 @@ public class FileCryptoProviderTest
         var ok = await p.VerifyHashAsync( key.KeyId, digest, sig, HashAlgorithmName.SHA256 );
 
         Assert.True( ok );
+
+
+        /*
+         * 
+         */
+        await p.RemoveKeyPairAsync( key.KeyId );
     }
 }
