@@ -8,7 +8,8 @@ namespace Andalus.Cli;
 
 /// <summary />
 [Command( "andalus", Description = "" )]
-[Subcommand( typeof( KeyCommand ))]
+[Subcommand( typeof( HashCommand ) )]
+[Subcommand( typeof( KeyCommand ) )]
 [VersionOptionFromMember( MemberName = nameof( GetVersion ) )]
 public class Program
 {
@@ -27,7 +28,14 @@ public class Program
         {
             var prov = Environment.GetEnvironmentVariable( "ANDALUS_HSM_PROVIDER" )?.ToLowerInvariant() ?? "keyvault";
 
-            if ( prov == "keyvault" )
+            if ( prov == "file" )
+            {
+                return new FileCryptoProvider( new FileCryptoProviderOptions()
+                {
+                    RootDirectory = Path.Combine( Environment.CurrentDirectory, "keyvault" ),
+                } );
+            }
+            else if ( prov == "keyvault" )
             {
                 var kvid = Environment.GetEnvironmentVariable( "ANDALUS_HSM_KEYVAULT" ) ?? throw new ApplicationException( "Missing ANDALUS_HSM_KEYVAULT" );
 

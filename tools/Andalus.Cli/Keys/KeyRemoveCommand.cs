@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations;
 namespace Andalus.Cli.Keys;
 
 /// <summary />
-[Command( "remove" )]
+[Command( "remove", Description = "" )]
 public class KeyRemoveCommand
 {
     private readonly ICryptoProvider _crypto;
