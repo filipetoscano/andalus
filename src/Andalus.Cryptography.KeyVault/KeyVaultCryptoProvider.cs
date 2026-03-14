@@ -51,6 +51,59 @@ public class KeyVaultCryptoProvider : ICryptoProvider
     }
 
 
+    /// <inheritdoc />
+    public Task<KeyReference> ImportKeyPairAsync( KeyCreationOptions options, KeyPair keyPair, CancellationToken cancellationToken = default )
+    {
+        throw new NotImplementedException();
+    }
+
+
+    /// <inheritdoc />
+    public async Task RemoveKeyPairAsync( string keyId, CancellationToken cancellationToken = default )
+    {
+        var key = new KeyVaultKeyIdentifier( new Uri( keyId ) );
+
+        await _kc.StartDeleteKeyAsync( key.Name, cancellationToken );
+    }
+
+
+    /// <inheritdoc />
+    public async Task<SignResult> SignHashAsync(
+        string keyId,
+        ReadOnlyMemory<byte> hash,
+        HashAlgorithmName hashAlgorithm,
+        CancellationToken cancellationToken = default )
+    {
+        var bytes = hash.ToArray();
+
+        var key = new KeyVaultKeyIdentifier( new Uri( keyId ) );
+        var client = _kc.GetCryptographyClient( key.Name );
+        var result = await client.SignAsync( SignatureAlgorithm.ES256K, bytes, cancellationToken );
+
+        return new SignResult()
+        {
+            KeyVersion = key.Version,
+            Signature = result.Signature,
+            Format = KeySignatureFormat.IeeeP1363,
+        };
+    }
+
+
+    /// <inheritdoc />
+    public async Task<bool> VerifyHashAsync( string keyId, ReadOnlyMemory<byte> hash, ReadOnlyMemory<byte> signature, HashAlgorithmName hashAlgorithm, CancellationToken cancellationToken = default )
+    {
+        var hashBytes = hash.ToArray();
+        var signBytes = signature.ToArray();
+
+        var key = new KeyVaultKeyIdentifier( new Uri( keyId ) );
+        var client = _kc.GetCryptographyClient( key.Name );
+        var result = await client.VerifyAsync( SignatureAlgorithm.ES256K, hashBytes, signBytes, cancellationToken );
+
+        return result.IsValid;
+    }
+
+
+    /// <summary />
     private async Task<KeyVaultKey> CreateEcKeyAsync(
         KeyCreationOptions options,
         KeyCurveName curve,
@@ -70,13 +123,7 @@ public class KeyVaultCryptoProvider : ICryptoProvider
     }
 
 
-    /// <inheritdoc />
-    public Task<KeyReference> ImportKeyPairAsync( KeyCreationOptions options, KeyPair keyPair, CancellationToken cancellationToken = default )
-    {
-        throw new NotImplementedException();
-    }
-
-
+    /// <summary />
     private async Task<KeyVaultKey> CreateRsaKeyAsync(
         KeyCreationOptions options,
         CancellationToken cancellationToken )
@@ -92,56 +139,6 @@ public class KeyVaultCryptoProvider : ICryptoProvider
         ApplyMetadata( rsaOptions, options.Metadata );
 
         return await _kc.CreateRsaKeyAsync( rsaOptions, cancellationToken );
-    }
-
-
-    /// <inheritdoc />
-    public Task RemoveKeyPairAsync( string keyId, CancellationToken cancellationToken = default )
-    {
-        throw new NotImplementedException();
-    }
-
-
-    /// <inheritdoc />
-    public async Task<SignResult> SignHashAsync(
-        string keyId,
-        ReadOnlyMemory<byte> hash,
-        HashAlgorithmName hashAlgorithm,
-        CancellationToken cancellationToken = default )
-    {
-        var bytes = hash.ToArray();
-
-        var client = new CryptographyClient(
-            new Uri( keyId ),
-            _credential
-        );
-
-        var result = await client.SignAsync( SignatureAlgorithm.ES256K, bytes, cancellationToken );
-
-        return new SignResult()
-        {
-            KeyVersion = keyId,
-            Signature = result.Signature,
-            Format = KeySignatureFormat.IeeeP1363,
-        };
-    }
-
-
-    /// <inheritdoc />
-    public async Task<bool> VerifyHashAsync( string keyId, ReadOnlyMemory<byte> hash, ReadOnlyMemory<byte> signature, HashAlgorithmName hashAlgorithm, CancellationToken cancellationToken = default )
-    {
-        var hashBytes = hash.ToArray();
-        var signBytes = signature.ToArray();
-
-
-        var client = new CryptographyClient(
-            new Uri( keyId ),
-            _credential
-        );
-
-        var result = await client.VerifyAsync( SignatureAlgorithm.ES256K, hashBytes, signBytes, cancellationToken );
-
-        return result.IsValid;
     }
 
 

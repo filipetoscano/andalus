@@ -5,7 +5,8 @@
 /sample/
 
 # Specific
-
+/*.txt
+/tools/Andalus.Cli/*.cmd
 
 # Global ignores
 bin/
