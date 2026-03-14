@@ -29,7 +29,7 @@ public class AwsKmsCryptoProvider : ICryptoProvider
             KeySpec = keySpec,
             KeyUsage = KeyUsageType.SIGN_VERIFY,
             Description = options.KeyName,
-            Tags = options.Metadata
+            Tags = options.Tags
                 .Select( kv => new Tag { TagKey = kv.Key, TagValue = kv.Value } )
                 .ToList(),
         };

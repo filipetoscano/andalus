@@ -170,7 +170,7 @@ public class KeyVaultCryptoProvider : ICryptoProvider
             Exportable = options.Exportable,
         };
 
-        ApplyMetadata( ecOptions, options.Metadata );
+        ApplyMetadata( ecOptions, options.Tags );
 
         return await _kc.CreateEcKeyAsync( ecOptions, cancellationToken );
     }
@@ -190,7 +190,7 @@ public class KeyVaultCryptoProvider : ICryptoProvider
             Exportable = options.Exportable,
         };
 
-        ApplyMetadata( rsaOptions, options.Metadata );
+        ApplyMetadata( rsaOptions, options.Tags );
 
         return await _kc.CreateRsaKeyAsync( rsaOptions, cancellationToken );
     }

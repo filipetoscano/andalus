@@ -27,5 +27,5 @@ public sealed class KeyCreationOptions
     /// <summary>
     /// Vendor-specific metadata (tags, policies, etc.).
     /// </summary>
-    public IDictionary<string, string> Metadata { get; init; } = new Dictionary<string, string>();
+    public Dictionary<string, string> Tags { get; init; } = new Dictionary<string, string>();
 }

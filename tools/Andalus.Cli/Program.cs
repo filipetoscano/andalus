@@ -30,10 +30,12 @@ public class Program
 
             if ( prov == "file" )
             {
-                return new FileCryptoProvider( new FileCryptoProviderOptions()
+                var ks = new FilesystemKeyStore( new FilesystemKeyStoreOptions()
                 {
                     RootDirectory = Path.Combine( Environment.CurrentDirectory, "keyvault" ),
                 } );
+
+                return new KeyStoreCryptoProvider( ks );
             }
             else if ( prov == "keyvault" )
             {

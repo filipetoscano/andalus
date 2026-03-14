@@ -40,7 +40,7 @@ public class GoogleKmsCryptoProvider : ICryptoProvider
                 Algorithm = algorithm,
                 ProtectionLevel = protection,
             },
-            Labels = { options.Metadata.ToDictionary( kv => kv.Key, kv => kv.Value ) },
+            Labels = { options.Tags.ToDictionary( kv => kv.Key, kv => kv.Value ) },
         };
 
         if ( options.MomentExpiry.HasValue == true )

@@ -16,10 +16,12 @@ public class FileCryptoProviderTest
     [InlineData( KeyType.Rsa4096 )]
     public async Task Roundtrip( KeyType keyType )
     {
-        var p = new FileCryptoProvider( new FileCryptoProviderOptions()
+        var fs = new FilesystemKeyStore( new FilesystemKeyStoreOptions()
         {
             RootDirectory = Path.Combine( Environment.CurrentDirectory, "tests" ),
         } );
+
+        var p = new KeyStoreCryptoProvider( fs );
 
         var keyRef = await p.CreateKeyPairAsync( new
 
