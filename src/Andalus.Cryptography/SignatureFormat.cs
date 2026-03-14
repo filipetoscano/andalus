@@ -23,7 +23,7 @@ public class SignatureFormat
 
         // SEQUENCE tag (1) + length (1-2) + INTEGER tag (1) + length (1) + r + INTEGER tag (1) + length (1) + s
         var sequencePayload = 2 + rLen + 2 + sLen;
-        var totalLen = 2 + ( sequencePayload > 127 ? 2 : 1 ) + sequencePayload;
+        var totalLen = 1 + ( sequencePayload > 127 ? 2 : 1 ) + sequencePayload;
 
         var der = new byte[ totalLen ];
         var offset = 0;
