@@ -6,7 +6,7 @@ using System.Security.Cryptography;
 namespace Andalus.Cli.Keys;
 
 /// <summary />
-[Command( "sign", Description = "" )]
+[Command( "sign", Description = "Signs a hash" )]
 public class KeySignCommand
 {
     private readonly ICryptoProvider _crypto;
@@ -29,12 +29,18 @@ public class KeySignCommand
     [Required]
     public string? Hash { get; set; }
 
+    /// <summary />
+    [Option( "-n|--hash-algo", CommandOptionType.SingleValue, Description = "Hash algorithm name" )]
+    public string HashAlgorithmName { get; set; } = "SHA256";
+
 
     /// <summary />
     public async Task<int> OnExecuteAsync()
     {
+        var han = new HashAlgorithmName( this.HashAlgorithmName! );
+
         var hash = Convert.FromBase64String( this.Hash! );
-        var sr = await _crypto.SignHashAsync( this.KeyReference!, hash, HashAlgorithmName.SHA256 );
+        var sr = await _crypto.SignHashAsync( this.KeyReference!, hash, han );
 
         Console.WriteLine( Convert.ToBase64String( sr.Signature ) );
 

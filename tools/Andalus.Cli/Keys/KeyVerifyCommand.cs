@@ -6,7 +6,7 @@ using System.Security.Cryptography;
 namespace Andalus.Cli.Keys;
 
 /// <summary />
-[Command( "verify", Description = "" )]
+[Command( "verify", Description = "Verifies a signature" )]
 public class KeyVerifyCommand
 {
     private readonly ICryptoProvider _crypto;
@@ -34,14 +34,20 @@ public class KeyVerifyCommand
     [Required]
     public string? Signature { get; set; }
 
+    /// <summary />
+    [Option( "-n|--hash-algo", CommandOptionType.SingleValue, Description = "Hash algorithm name" )]
+    public string HashAlgorithmName { get; set; } = "SHA256";
+
 
     /// <summary />
     public async Task<int> OnExecuteAsync()
     {
+        var han = new HashAlgorithmName( this.HashAlgorithmName! );
+
         var hash = Convert.FromBase64String( this.Hash! );
         var sign = Convert.FromBase64String( this.Signature! );
 
-        var isValid = await _crypto.VerifyHashAsync( this.KeyReference!, hash, sign, HashAlgorithmName.SHA256 );
+        var isValid = await _crypto.VerifyHashAsync( this.KeyReference!, hash, sign, han );
 
         if ( isValid == false )
         {

@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations;
 namespace Andalus.Cli.Keys;
 
 /// <summary />
-[Command( "create", Description = "" )]
+[Command( "create", Description = "Create a key pair" )]
 public class KeyCreateCommand
 {
     private readonly ICryptoProvider _crypto;

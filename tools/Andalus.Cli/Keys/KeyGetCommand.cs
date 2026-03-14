@@ -5,14 +5,14 @@ using System.ComponentModel.DataAnnotations;
 namespace Andalus.Cli.Keys;
 
 /// <summary />
-[Command( "remove", Description = "Remove a key pair" )]
-public class KeyRemoveCommand
+[Command( "get", Description = "Retrieve the public key" )]
+public class KeyGetCommand
 {
     private readonly ICryptoProvider _crypto;
 
 
     /// <summary />
-    public KeyRemoveCommand( ICryptoProvider cp )
+    public KeyGetCommand( ICryptoProvider cp )
     {
         _crypto = cp;
     }
@@ -27,7 +27,8 @@ public class KeyRemoveCommand
     /// <summary />
     public async Task<int> OnExecuteAsync()
     {
-        await _crypto.RemoveKeyPairAsync( this.KeyReference! );
+        var kp = await _crypto.GetPublicKeyAsync( this.KeyReference! );
+        Console.WriteLine( Convert.ToBase64String( kp ) );
 
         return 0;
     }

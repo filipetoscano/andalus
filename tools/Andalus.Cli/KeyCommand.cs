@@ -5,6 +5,7 @@ namespace Andalus.Cli;
 /// <summary />
 [Command( "key" )]
 [Subcommand( typeof( Keys.KeyCreateCommand ) )]
+[Subcommand( typeof( Keys.KeyGetCommand ) )]
 [Subcommand( typeof( Keys.KeyRemoveCommand ) )]
 [Subcommand( typeof( Keys.KeySignCommand ) )]
 [Subcommand( typeof( Keys.KeyVerifyCommand ) )]
