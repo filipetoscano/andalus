@@ -114,7 +114,6 @@ public class GoogleKmsCryptoProvider : ICryptoProvider
         {
             KeyVersion = response.Name,
             Signature = response.Signature.ToByteArray(),
-            Format = KeySignatureFormat.Der,
         };
     }
 

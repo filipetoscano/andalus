@@ -82,11 +82,12 @@ public class KeyVaultCryptoProvider : ICryptoProvider
         var client = _kc.GetCryptographyClient( key.Name, key.Version );
         var result = await client.SignAsync( SignatureAlgorithm.ES256K, bytes, cancellationToken );
 
+        var signature = SignatureFormat.ConvertIeeeP1363ToDer( result.Signature ) ;
+
         return new SignResult()
         {
             KeyVersion = key.Version,
-            Signature = result.Signature,
-            Format = KeySignatureFormat.IeeeP1363,
+            Signature = signature,
         };
     }
 
@@ -96,6 +97,7 @@ public class KeyVaultCryptoProvider : ICryptoProvider
     {
         var hashBytes = hash.ToArray();
         var signBytes = signature.ToArray();
+        signBytes = SignatureFormat.ConvertDerToIeeeP1363( signBytes );
 
         var key = new KeyVaultKeyIdentifier( new Uri( keyId ) );
         var client = _kc.GetCryptographyClient( key.Name, key.Version );

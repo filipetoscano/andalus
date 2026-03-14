@@ -36,7 +36,7 @@ public class KeySignCommand
         var hash = Convert.FromBase64String( this.Hash! );
         var sr = await _crypto.SignHashAsync( this.KeyId!, hash, HashAlgorithmName.SHA256 );
 
-        Console.WriteLine( Convert.ToBase64String( sr.ConvertSignature( KeySignatureFormat.Der ) ) );
+        Console.WriteLine( Convert.ToBase64String( sr.Signature ) );
 
         return 0;
     }

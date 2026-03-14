@@ -91,7 +91,6 @@ public class AwsKmsCryptoProvider : ICryptoProvider
         {
             KeyVersion = response.KeyId,
             Signature = response.Signature.ToArray(),
-            Format = KeySignatureFormat.Der,
         };
     }
 

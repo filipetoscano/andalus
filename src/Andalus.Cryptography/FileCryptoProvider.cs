@@ -136,7 +136,6 @@ public class FileCryptoProvider : ICryptoProvider
         return new SignResult()
         {
             Signature = signature,
-            Format = KeySignatureFormat.Der,
             KeyVersion = keyId,
         };
     }
