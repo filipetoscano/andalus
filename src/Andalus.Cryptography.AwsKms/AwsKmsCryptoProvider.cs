@@ -72,6 +72,13 @@ public class AwsKmsCryptoProvider : ICryptoProvider
 
 
     /// <inheritdoc />
+    public Task<RemoveResult> RemoveKeyPairAsync( KeyReference key, CancellationToken cancellationToken = default )
+    {
+        throw new NotImplementedException();
+    }
+
+
+    /// <inheritdoc />
     public async Task<SignResult> SignHashAsync(
         KeyReference key,
         ReadOnlyMemory<byte> hash,
@@ -120,13 +127,6 @@ public class AwsKmsCryptoProvider : ICryptoProvider
         var response = await _kms.VerifyAsync( request, cancellationToken );
 
         return response.SignatureValid ?? false;
-    }
-
-
-    /// <inheritdoc />
-    public Task RemoveKeyPairAsync( KeyReference key, CancellationToken cancellationToken = default )
-    {
-        throw new NotImplementedException();
     }
 
 

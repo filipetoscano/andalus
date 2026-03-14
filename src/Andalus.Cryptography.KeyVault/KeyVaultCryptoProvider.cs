@@ -79,13 +79,16 @@ public class KeyVaultCryptoProvider : ICryptoProvider
 
 
     /// <inheritdoc />
-    public async Task RemoveKeyPairAsync( KeyReference key, CancellationToken cancellationToken = default )
+    public async Task<RemoveResult> RemoveKeyPairAsync( KeyReference key, CancellationToken cancellationToken = default )
     {
         var kid = new KeyVaultKeyIdentifier( new Uri( key.KeyId ) );
 
         var op = await _kc.StartDeleteKeyAsync( kid.Name, cancellationToken );
 
-        await op.WaitForCompletionAsync();
+        return new RemoveResult()
+        {
+            CompleteAsync = op.WaitForCompletionAsync().AsTask(),
+        };
     }
 
 

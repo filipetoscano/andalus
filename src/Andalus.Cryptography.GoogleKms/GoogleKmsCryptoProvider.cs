@@ -103,6 +103,13 @@ public class GoogleKmsCryptoProvider : ICryptoProvider
 
 
     /// <inheritdoc />
+    public Task<RemoveResult> RemoveKeyPairAsync( KeyReference key, CancellationToken cancellationToken = default )
+    {
+        throw new NotImplementedException();
+    }
+
+
+    /// <inheritdoc />
     public async Task<SignResult> SignHashAsync(
         KeyReference key,
         ReadOnlyMemory<byte> hash,
@@ -169,13 +176,6 @@ public class GoogleKmsCryptoProvider : ICryptoProvider
                 hashAlgorithm ?? m.HashAlgorithmName,
                 RSASignaturePadding.Pkcs1 );
         }
-    }
-
-
-    /// <inheritdoc />
-    public Task RemoveKeyPairAsync( KeyReference key, CancellationToken cancellationToken = default )
-    {
-        throw new NotImplementedException();
     }
 
 

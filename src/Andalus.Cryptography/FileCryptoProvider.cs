@@ -92,9 +92,7 @@ public class FileCryptoProvider : ICryptoProvider
         var metadata = new KeyMetadata()
         {
             KeyName = options.KeyName,
-            KeyFamily = m.KeyFamily,
             KeyType = options.KeyType,
-            HashAlgorithmName = m.HashAlgorithmName,
             MomentCreated = DateTimeOffset.UtcNow,
             MomentExpiry = options.MomentExpiry,
             Tags = new Dictionary<string, string>( options.Metadata ),
@@ -113,12 +111,27 @@ public class FileCryptoProvider : ICryptoProvider
 
 
     /// <inheritdoc />
+    public Task<RemoveResult> RemoveKeyPairAsync(
+        KeyReference key,
+        CancellationToken cancellationToken = default )
+    {
+        var keyDir = Path.Combine( _root, key.KeyId );
+        Directory.Delete( keyDir, true );
+
+        return Task.FromResult( new RemoveResult()
+        {
+        } );
+    }
+
+
+    /// <inheritdoc />
     public async Task<SignResult> SignHashAsync(
         KeyReference key,
         ReadOnlyMemory<byte> hash,
         HashAlgorithmName? hashAlgorithm = null,
         CancellationToken cancellationToken = default )
     {
+        var m = key.KeyType.Resolve();
         var metadata = await ReadMetadataAsync( key.KeyId, cancellationToken );
 
         var privatePem = await File.ReadAllTextAsync(
@@ -127,14 +140,14 @@ public class FileCryptoProvider : ICryptoProvider
 
         byte[] signature;
 
-        if ( metadata.KeyFamily == KeyFamily.Rsa )
+        if ( m.KeyFamily == KeyFamily.Rsa )
         {
             using var rsa = RSA.Create();
             rsa.ImportFromPem( privatePem );
 
             signature = rsa.SignHash(
                 hash.ToArray(),
-                hashAlgorithm ?? metadata.HashAlgorithmName,
+                hashAlgorithm ?? m.HashAlgorithmName,
                 RSASignaturePadding.Pkcs1 );
         }
         else
@@ -163,13 +176,14 @@ public class FileCryptoProvider : ICryptoProvider
         HashAlgorithmName? hashAlgorithm = null,
         CancellationToken cancellationToken = default )
     {
+        var m = key.KeyType.Resolve();
         var metadata = await ReadMetadataAsync( key.KeyId, cancellationToken );
 
         var publicPem = await File.ReadAllTextAsync(
             GetPublicKeyPath( key.KeyId ),
             cancellationToken );
 
-        if ( metadata.KeyFamily == KeyFamily.Rsa )
+        if ( m.KeyFamily == KeyFamily.Rsa )
         {
             using var rsa = RSA.Create();
             rsa.ImportFromPem( publicPem );
@@ -177,7 +191,7 @@ public class FileCryptoProvider : ICryptoProvider
             return rsa.VerifyHash(
                 hash.ToArray(),
                 signature.ToArray(),
-                hashAlgorithm ?? metadata.HashAlgorithmName,
+                hashAlgorithm ?? m.HashAlgorithmName,
                 RSASignaturePadding.Pkcs1 );
         }
         else
@@ -190,18 +204,6 @@ public class FileCryptoProvider : ICryptoProvider
                 signature.ToArray(),
                 DSASignatureFormat.Rfc3279DerSequence );
         }
-    }
-
-
-    /// <inheritdoc />
-    public Task RemoveKeyPairAsync(
-        KeyReference key,
-        CancellationToken cancellationToken = default )
-    {
-        var keyDir = Path.Combine( _root, key.KeyId );
-        Directory.Delete( keyDir, true );
-
-        return Task.CompletedTask;
     }
 
 

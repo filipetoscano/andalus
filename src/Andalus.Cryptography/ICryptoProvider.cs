@@ -50,7 +50,7 @@ public interface ICryptoProvider
     /// <param name="key">Key reference.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
-    Task RemoveKeyPairAsync(
+    Task<RemoveResult> RemoveKeyPairAsync(
         KeyReference key,
         CancellationToken cancellationToken = default );
 
