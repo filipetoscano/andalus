@@ -19,9 +19,33 @@ public sealed class KeyReference
     /// </summary>
     public required KeyType KeyType { get; init; }
 
-    /// <summary>
-    /// The public key bytes (X.509 SubjectPublicKeyInfo / DER-encoded).
-    /// Available locally for verification and KeyInfo embedding.
-    /// </summary>
-    public required byte[] PublicKey { get; init; }
+
+    /// <summary />
+    public override string ToString()
+    {
+        return $"{this.KeyId}#{this.KeyType}";
+    }
+
+
+    /// <summary />
+    public static implicit operator string( KeyReference key )
+    {
+        return $"{key.KeyId}#{key.KeyType}";
+    }
+
+
+    /// <summary />
+    public static implicit operator KeyReference( string value )
+    {
+        var ix = value.LastIndexOf( '#' );
+
+        if ( ix < 0 )
+            throw new FormatException( $"Invalid key reference '{value}', expected 'KeyId#KeyType'." );
+
+        return new KeyReference
+        {
+            KeyId = value[ ..ix ],
+            KeyType = Enum.Parse<KeyType>( value[ ( ix + 1 ).. ] ),
+        };
+    }
 }

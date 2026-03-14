@@ -19,15 +19,15 @@ public class KeyRemoveCommand
 
 
     /// <summary />
-    [Argument( 0, Description = "Key identifier" )]
+    [Argument( 0, Description = "Key reference" )]
     [Required]
-    public string? KeyId { get; set; }
+    public string? KeyReference { get; set; }
 
 
     /// <summary />
     public async Task<int> OnExecuteAsync()
     {
-        await _crypto.RemoveKeyPairAsync( this.KeyId! );
+        await _crypto.RemoveKeyPairAsync( this.KeyReference! );
 
         return 0;
     }

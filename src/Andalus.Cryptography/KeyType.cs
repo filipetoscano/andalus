@@ -4,7 +4,7 @@
 public enum KeyType
 {
     /// <summary />
-    RsaSha256,
+    RsaSha256 = 1,
 
     /// <summary />
     RsaSha384,

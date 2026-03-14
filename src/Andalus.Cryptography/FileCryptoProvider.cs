@@ -40,10 +40,11 @@ public class FileCryptoProvider : ICryptoProvider
             _ => throw new NotSupportedException( $"Key type '{options.KeyType}' is not supported." )
         };
 
+        var m = options.KeyType.Resolve();
+
         var metadata = new KeyMetadata()
         {
             KeyName = options.KeyName,
-            KeyFamily = kp.KeyFamily,
             KeyType = options.KeyType,
             MomentCreated = DateTimeOffset.UtcNow,
             MomentExpiry = options.MomentExpiry,
@@ -54,18 +55,25 @@ public class FileCryptoProvider : ICryptoProvider
         await File.WriteAllTextAsync( GetPublicKeyPath( keyId ), kp.PublicPem, cancellationToken );
         await WriteMetadataAsync( keyId, metadata, cancellationToken );
 
-
-        /*
-         * 
-         */
-        //var publicKey = Convert.FromBase64String( PemEncoding.Find( kp.PublicPem ).Base64Data.ToString() );
-
         return new KeyReference()
         {
             KeyId = keyId,
             KeyType = options.KeyType,
-            PublicKey = [],
         };
+    }
+
+
+    /// <inheritdoc />
+    public async Task<byte[]> GetPublicKeyAsync( KeyReference key, CancellationToken cancellationToken = default )
+    {
+        var pem = await File.ReadAllTextAsync( GetPublicKeyPath( key.KeyId ), cancellationToken );
+
+        var field = PemEncoding.Find( pem );
+
+        if ( pem[ field.Label ] is not "PUBLIC KEY" )
+            throw new InvalidOperationException( $"Expected 'PUBLIC KEY' PEM block, found '{pem[ field.Label ]}'." );
+
+        return Convert.FromBase64String( pem[ field.Base64Data ] );
     }
 
 
@@ -79,11 +87,14 @@ public class FileCryptoProvider : ICryptoProvider
         var keyDir = Path.Combine( _root, keyId );
         Directory.CreateDirectory( keyDir );
 
+        var m = options.KeyType.Resolve();
+
         var metadata = new KeyMetadata()
         {
             KeyName = options.KeyName,
-            KeyFamily = keyPair.KeyFamily,
+            KeyFamily = m.KeyFamily,
             KeyType = options.KeyType,
+            HashAlgorithmName = m.HashAlgorithmName,
             MomentCreated = DateTimeOffset.UtcNow,
             MomentExpiry = options.MomentExpiry,
             Tags = new Dictionary<string, string>( options.Metadata ),
@@ -97,18 +108,21 @@ public class FileCryptoProvider : ICryptoProvider
         {
             KeyId = keyId,
             KeyType = options.KeyType,
-            PublicKey = [],
         };
     }
 
 
     /// <inheritdoc />
-    public async Task<SignResult> SignHashAsync( string keyId, ReadOnlyMemory<byte> hash, HashAlgorithmName hashAlgorithm, CancellationToken cancellationToken = default )
+    public async Task<SignResult> SignHashAsync(
+        KeyReference key,
+        ReadOnlyMemory<byte> hash,
+        HashAlgorithmName? hashAlgorithm = null,
+        CancellationToken cancellationToken = default )
     {
-        var metadata = await ReadMetadataAsync( keyId, cancellationToken );
+        var metadata = await ReadMetadataAsync( key.KeyId, cancellationToken );
 
         var privatePem = await File.ReadAllTextAsync(
-            GetPrivateKeyPath( keyId ),
+            GetPrivateKeyPath( key.KeyId ),
             cancellationToken );
 
         byte[] signature;
@@ -120,7 +134,7 @@ public class FileCryptoProvider : ICryptoProvider
 
             signature = rsa.SignHash(
                 hash.ToArray(),
-                hashAlgorithm,
+                hashAlgorithm ?? metadata.HashAlgorithmName,
                 RSASignaturePadding.Pkcs1 );
         }
         else
@@ -136,18 +150,23 @@ public class FileCryptoProvider : ICryptoProvider
         return new SignResult()
         {
             Signature = signature,
-            KeyVersion = keyId,
+            KeyVersion = key,
         };
     }
 
 
     /// <inheritdoc />
-    public async Task<bool> VerifyHashAsync( string keyId, ReadOnlyMemory<byte> hash, ReadOnlyMemory<byte> signature, HashAlgorithmName hashAlgorithm, CancellationToken cancellationToken = default )
+    public async Task<bool> VerifyHashAsync(
+        KeyReference key,
+        ReadOnlyMemory<byte> hash,
+        ReadOnlyMemory<byte> signature,
+        HashAlgorithmName? hashAlgorithm = null,
+        CancellationToken cancellationToken = default )
     {
-        var metadata = await ReadMetadataAsync( keyId, cancellationToken );
+        var metadata = await ReadMetadataAsync( key.KeyId, cancellationToken );
 
         var publicPem = await File.ReadAllTextAsync(
-            GetPublicKeyPath( keyId ),
+            GetPublicKeyPath( key.KeyId ),
             cancellationToken );
 
         if ( metadata.KeyFamily == KeyFamily.Rsa )
@@ -158,7 +177,7 @@ public class FileCryptoProvider : ICryptoProvider
             return rsa.VerifyHash(
                 hash.ToArray(),
                 signature.ToArray(),
-                hashAlgorithm,
+                hashAlgorithm ?? metadata.HashAlgorithmName,
                 RSASignaturePadding.Pkcs1 );
         }
         else
@@ -174,17 +193,16 @@ public class FileCryptoProvider : ICryptoProvider
     }
 
 
-
     /// <inheritdoc />
-    public Task RemoveKeyPairAsync( string keyId, CancellationToken cancellationToken = default )
+    public Task RemoveKeyPairAsync(
+        KeyReference key,
+        CancellationToken cancellationToken = default )
     {
-        var keyDir = Path.Combine( _root, keyId );
+        var keyDir = Path.Combine( _root, key.KeyId );
         Directory.Delete( keyDir, true );
 
         return Task.CompletedTask;
     }
-
-
 
 
     /// <summary />
@@ -197,7 +215,6 @@ public class FileCryptoProvider : ICryptoProvider
 
         return new KeyPair()
         {
-            KeyFamily = KeyFamily.Ecdsa,
             PrivatePem = privatePem,
             PublicPem = publicPem,
         };
@@ -214,7 +231,6 @@ public class FileCryptoProvider : ICryptoProvider
 
         return new KeyPair()
         {
-            KeyFamily = KeyFamily.Rsa,
             PrivatePem = privatePem,
             PublicPem = publicPem,
         };
@@ -268,9 +284,6 @@ public class FileCryptoProvider : ICryptoProvider
     {
         /// <summary />
         public required string KeyName { get; init; }
-
-        /// <summary />
-        public required KeyFamily KeyFamily { get; set; }
 
         /// <summary />
         public required KeyType KeyType { get; init; }

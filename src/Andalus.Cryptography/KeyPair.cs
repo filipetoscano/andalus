@@ -4,9 +4,6 @@
 public struct KeyPair
 {
     /// <summary />
-    public required KeyFamily KeyFamily { get; init; }
-
-    /// <summary />
     public required string PublicPem { get; init; }
 
     /// <summary />

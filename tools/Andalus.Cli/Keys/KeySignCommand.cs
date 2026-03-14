@@ -20,9 +20,9 @@ public class KeySignCommand
 
 
     /// <summary />
-    [Argument( 0, Description = "Key identifier" )]
+    [Argument( 0, Description = "Key reference" )]
     [Required]
-    public string? KeyId { get; set; }
+    public string? KeyReference { get; set; }
 
     /// <summary />
     [Argument( 1, Description = "Hash" )]
@@ -34,7 +34,7 @@ public class KeySignCommand
     public async Task<int> OnExecuteAsync()
     {
         var hash = Convert.FromBase64String( this.Hash! );
-        var sr = await _crypto.SignHashAsync( this.KeyId!, hash, HashAlgorithmName.SHA256 );
+        var sr = await _crypto.SignHashAsync( this.KeyReference!, hash );
 
         Console.WriteLine( Convert.ToBase64String( sr.Signature ) );
 

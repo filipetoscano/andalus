@@ -46,8 +46,28 @@ public class KeyVaultCryptoProvider : ICryptoProvider
         {
             KeyId = key.Id.ToString(),
             KeyType = options.KeyType,
-            PublicKey = [],
         };
+    }
+
+
+    /// <inheritdoc />
+    public async Task<byte[]> GetPublicKeyAsync( KeyReference key, CancellationToken cancellationToken = default )
+    {
+        var family = key.KeyType.Family();
+        var kid = new KeyVaultKeyIdentifier( new Uri( key.KeyId ) );
+
+        var kv = await _kc.GetKeyAsync( kid.Name, kid.Version );
+
+        if ( family == KeyFamily.Ecdsa )
+        {
+            using var ecdsa = kv.Value.Key.ToECDsa( false );
+            return ecdsa.ExportSubjectPublicKeyInfo();
+        }
+        else
+        {
+            using var rsa = kv.Value.Key.ToRSA( false );
+            return rsa.ExportSubjectPublicKeyInfo();
+        }
     }
 
 
@@ -59,11 +79,11 @@ public class KeyVaultCryptoProvider : ICryptoProvider
 
 
     /// <inheritdoc />
-    public async Task RemoveKeyPairAsync( string keyId, CancellationToken cancellationToken = default )
+    public async Task RemoveKeyPairAsync( KeyReference key, CancellationToken cancellationToken = default )
     {
-        var key = new KeyVaultKeyIdentifier( new Uri( keyId ) );
+        var kid = new KeyVaultKeyIdentifier( new Uri( key.KeyId ) );
 
-        var op = await _kc.StartDeleteKeyAsync( key.Name, cancellationToken );
+        var op = await _kc.StartDeleteKeyAsync( kid.Name, cancellationToken );
 
         await op.WaitForCompletionAsync();
     }
@@ -71,36 +91,62 @@ public class KeyVaultCryptoProvider : ICryptoProvider
 
     /// <inheritdoc />
     public async Task<SignResult> SignHashAsync(
-        string keyId,
+        KeyReference key,
         ReadOnlyMemory<byte> hash,
-        HashAlgorithmName hashAlgorithm,
+        HashAlgorithmName? hashAlgorithm = null,
         CancellationToken cancellationToken = default )
     {
+        var m = key.KeyType.Resolve();
         var bytes = hash.ToArray();
 
-        var key = new KeyVaultKeyIdentifier( new Uri( keyId ) );
-        var client = _kc.GetCryptographyClient( key.Name, key.Version );
+
+        /*
+         * 
+         */
+        var kid = new KeyVaultKeyIdentifier( new Uri( key.KeyId ) );
+        var client = _kc.GetCryptographyClient( kid.Name, kid.Version );
         var result = await client.SignAsync( SignatureAlgorithm.ES256K, bytes, cancellationToken );
 
-        var signature = SignatureFormat.ConvertIeeeP1363ToDer( result.Signature ) ;
+
+        /*
+         * 
+         */
+        byte[] signature;
+
+        if ( m.KeyFamily == KeyFamily.Ecdsa )
+            signature = SignatureFormat.ConvertIeeeP1363ToDer( result.Signature );
+        else
+            signature = result.Signature;
 
         return new SignResult()
         {
-            KeyVersion = key.Version,
+            KeyVersion = kid.Version,
             Signature = signature,
         };
     }
 
 
     /// <inheritdoc />
-    public async Task<bool> VerifyHashAsync( string keyId, ReadOnlyMemory<byte> hash, ReadOnlyMemory<byte> signature, HashAlgorithmName hashAlgorithm, CancellationToken cancellationToken = default )
+    public async Task<bool> VerifyHashAsync(
+        KeyReference key,
+        ReadOnlyMemory<byte> hash,
+        ReadOnlyMemory<byte> signature,
+        HashAlgorithmName? hashAlgorithm = null,
+        CancellationToken cancellationToken = default )
     {
+        var m = key.KeyType.Resolve();
         var hashBytes = hash.ToArray();
         var signBytes = signature.ToArray();
-        signBytes = SignatureFormat.ConvertDerToIeeeP1363( signBytes );
 
-        var key = new KeyVaultKeyIdentifier( new Uri( keyId ) );
-        var client = _kc.GetCryptographyClient( key.Name, key.Version );
+        if ( m.KeyFamily == KeyFamily.Ecdsa )
+            signBytes = SignatureFormat.ConvertDerToIeeeP1363( signBytes );
+
+
+        /*
+         * 
+         */
+        var kid = new KeyVaultKeyIdentifier( new Uri( key.KeyId ) );
+        var client = _kc.GetCryptographyClient( kid.Name, kid.Version );
         var result = await client.VerifyAsync( SignatureAlgorithm.ES256K, hashBytes, signBytes, cancellationToken );
 
         return result.IsValid;

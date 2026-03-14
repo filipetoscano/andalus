@@ -10,15 +10,34 @@ namespace Andalus.Cryptography;
 public interface ICryptoProvider
 {
     /// <summary>
-    /// Creates a new key pair in the HSM and returns a reference
-    /// containing the key identifier and public portion.
+    /// Creates a new key pair in the HSM.
     /// </summary>
+    /// <param name="options">Key creation options.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Key reference.</returns>
     Task<KeyReference> CreateKeyPairAsync(
         KeyCreationOptions options,
         CancellationToken cancellationToken = default );
 
 
-    /// <summary />
+    /// <summary>
+    /// Retrieves the ASN public key.
+    /// </summary>
+    /// <param name="key">Key reference.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task<byte[]> GetPublicKeyAsync(
+        KeyReference key,
+        CancellationToken cancellationToken = default );
+
+
+    /// <summary>
+    /// Imports a keypair into the HSM.
+    /// </summary>
+    /// <param name="options">Key creation options.</param>
+    /// <param name="keyPair">Public/private key pair.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Key reference.</returns>
     Task<KeyReference> ImportKeyPairAsync(
         KeyCreationOptions options,
         KeyPair keyPair,
@@ -26,16 +45,28 @@ public interface ICryptoProvider
 
 
     /// <summary>
+    /// Removes a key pair from an HSM.
+    /// </summary>
+    /// <param name="key">Key reference.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task RemoveKeyPairAsync(
+        KeyReference key,
+        CancellationToken cancellationToken = default );
+
+
+    /// <summary>
     /// Signs a pre-computed hash remotely. The hash is computed locally;
     /// only the compact digest crosses the wire.
     /// </summary>
-    /// <param name="keyId">The HSM key identifier (from <see cref="KeyReference.KeyId"/>).</param>
-    /// <param name="hash">The digest bytes to sign.</param>
+    /// <param name="key">Key reference.</param>
+    /// <param name="hash">The hash/digest bytes to sign.</param>
+    /// <param name="hashAlgorithm"></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<SignResult> SignHashAsync(
-        string keyId,
+        KeyReference key,
         ReadOnlyMemory<byte> hash,
-        HashAlgorithmName hashAlgorithm,
+        HashAlgorithmName? hashAlgorithm = null,
         CancellationToken cancellationToken = default );
 
 
@@ -43,25 +74,14 @@ public interface ICryptoProvider
     /// Verifies a signature against a hash. Implementations may verify
     /// locally using the public key or delegate to the HSM.
     /// </summary>
-    /// <param name="keyId">Key identifier.</param>
+    /// <param name="key">Key reference.</param>
     /// <param name="hash">Digest bytes.</param>
     /// <param name="signature">Signature bytes.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<bool> VerifyHashAsync(
-        string keyId,
+        KeyReference key,
         ReadOnlyMemory<byte> hash,
         ReadOnlyMemory<byte> signature,
-        HashAlgorithmName hashAlgorithm,
-        CancellationToken cancellationToken = default );
-
-
-    /// <summary>
-    /// Removes a key pair from an HSM.
-    /// </summary>
-    /// <param name="keyId">Key identifier.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns></returns>
-    Task RemoveKeyPairAsync(
-        string keyId,
+        HashAlgorithmName? hashAlgorithm = null,
         CancellationToken cancellationToken = default );
 }

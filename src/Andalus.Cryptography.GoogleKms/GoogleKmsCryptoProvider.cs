@@ -75,15 +75,23 @@ public class GoogleKmsCryptoProvider : ICryptoProvider
         }
         while ( version.State == CryptoKeyVersion.Types.CryptoKeyVersionState.PendingGeneration );
 
-        // Retrieve the public key
-        var publicKey = await _kms.GetPublicKeyAsync( versionName, cancellationToken.ToCallSettings() );
-
         return new KeyReference
         {
             KeyId = versionName.ToString(),
             KeyType = options.KeyType,
-            PublicKey = ConvertPemToBytes( publicKey.Pem ),
         };
+    }
+
+
+    /// <inheritdoc />
+    public async Task<byte[]> GetPublicKeyAsync( KeyReference key, CancellationToken cancellationToken = default )
+    {
+        var versionName = CryptoKeyVersionName.Parse( key.KeyId );
+        var publicKey = await _kms.GetPublicKeyAsync( versionName, cancellationToken.ToCallSettings() );
+
+        var pemBytes = ConvertPemToBytes( publicKey.Pem );
+
+        return pemBytes;
     }
 
 
@@ -96,14 +104,15 @@ public class GoogleKmsCryptoProvider : ICryptoProvider
 
     /// <inheritdoc />
     public async Task<SignResult> SignHashAsync(
-        string keyId,
+        KeyReference key,
         ReadOnlyMemory<byte> hash,
-        HashAlgorithmName hashAlgorithm,
+        HashAlgorithmName? hashAlgorithm,
         CancellationToken cancellationToken = default )
     {
-        var versionName = CryptoKeyVersionName.Parse( keyId );
+        var versionName = CryptoKeyVersionName.Parse( key.KeyId );
+        var m = key.KeyType.Resolve();
 
-        var digest = WrapDigest( hash, hashAlgorithm );
+        var digest = WrapDigest( hash, hashAlgorithm ?? m.HashAlgorithmName );
 
         var response = await _kms.AsymmetricSignAsync(
             versionName,
@@ -120,13 +129,14 @@ public class GoogleKmsCryptoProvider : ICryptoProvider
 
     /// <inheritdoc />
     public async Task<bool> VerifyHashAsync(
-        string keyId,
+        KeyReference key,
         ReadOnlyMemory<byte> hash,
         ReadOnlyMemory<byte> signature,
-        HashAlgorithmName hashAlgorithm,
+        HashAlgorithmName? hashAlgorithm = null,
         CancellationToken cancellationToken = default )
     {
-        var versionName = CryptoKeyVersionName.Parse( keyId );
+        var versionName = CryptoKeyVersionName.Parse( key.KeyId );
+        var m = key.KeyType.Resolve();
 
         // Retrieve the public key from KMS
         var publicKey = await _kms.GetPublicKeyAsync(
@@ -143,7 +153,6 @@ public class GoogleKmsCryptoProvider : ICryptoProvider
             using var ecdsa = ECDsa.Create();
             ecdsa.ImportSubjectPublicKeyInfo( pemBytes, out _ );
 
-            // GCP returns DER signatures, ECDsa.VerifyHash expects IEEE P1363 by default
             return ecdsa.VerifyHash(
                 hash.Span,
                 signature.Span,
@@ -157,14 +166,14 @@ public class GoogleKmsCryptoProvider : ICryptoProvider
             return rsa.VerifyHash(
                 hash.ToArray(),
                 signature.ToArray(),
-                hashAlgorithm,
+                hashAlgorithm ?? m.HashAlgorithmName,
                 RSASignaturePadding.Pkcs1 );
         }
     }
 
 
     /// <inheritdoc />
-    public Task RemoveKeyPairAsync( string keyId, CancellationToken cancellationToken = default )
+    public Task RemoveKeyPairAsync( KeyReference key, CancellationToken cancellationToken = default )
     {
         throw new NotImplementedException();
     }

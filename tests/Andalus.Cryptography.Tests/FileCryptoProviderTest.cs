@@ -21,7 +21,7 @@ public class FileCryptoProviderTest
             RootDirectory = Path.Combine( Environment.CurrentDirectory, "tests" ),
         } );
 
-        var key = await p.CreateKeyPairAsync( new
+        var keyRef = await p.CreateKeyPairAsync( new
 
             KeyCreationOptions()
         {
@@ -38,22 +38,20 @@ public class FileCryptoProviderTest
         var digest = new byte[ 32 ];
         Random.Shared.NextBytes( digest );
 
-        var sr = await p.SignHashAsync( key.KeyId, digest, HashAlgorithmName.SHA256 );
-
-        var sig = sr.ConvertSignature( KeySignatureFormat.Der );
+        var sr = await p.SignHashAsync( keyRef, digest );
+        var sig = sr.Signature;
 
 
         /*
          * 
          */
-        var ok = await p.VerifyHashAsync( key.KeyId, digest, sig, HashAlgorithmName.SHA256 );
-
+        var ok = await p.VerifyHashAsync( keyRef, digest, sig );
         Assert.True( ok );
 
 
         /*
          * 
          */
-        await p.RemoveKeyPairAsync( key.KeyId );
+        await p.RemoveKeyPairAsync( keyRef );
     }
 }

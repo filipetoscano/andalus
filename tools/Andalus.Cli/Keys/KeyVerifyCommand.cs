@@ -20,9 +20,9 @@ public class KeyVerifyCommand
 
 
     /// <summary />
-    [Argument( 0, Description = "Key identifier" )]
+    [Argument( 0, Description = "Key reference" )]
     [Required]
-    public string? KeyId { get; set; }
+    public string? KeyReference { get; set; }
 
     /// <summary />
     [Argument( 1, Description = "Hash" )]
@@ -41,7 +41,7 @@ public class KeyVerifyCommand
         var hash = Convert.FromBase64String( this.Hash! );
         var sign = Convert.FromBase64String( this.Signature! );
 
-        var isValid = await _crypto.VerifyHashAsync( this.KeyId!, hash, sign, HashAlgorithmName.SHA256 );
+        var isValid = await _crypto.VerifyHashAsync( this.KeyReference!, hash, sign );
 
         if ( isValid == false )
         {

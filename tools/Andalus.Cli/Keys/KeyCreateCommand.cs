@@ -34,7 +34,7 @@ public class KeyCreateCommand
             Exportable = false,
         } );
 
-        Console.WriteLine( kp.KeyId );
+        Console.WriteLine( kp );
 
         return 0;
     }
