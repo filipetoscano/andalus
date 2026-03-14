@@ -7,6 +7,9 @@
 # Specific
 /*.txt
 /tools/Andalus.Cli/*.cmd
+/tools/Andalus.Cli/*.json
+/tools/Andalus.Cli/*.txt
+/tools/Andalus.Cli/*.xml
 /tools/Andalus.Cli/keyvault/
 
 # Global ignores
