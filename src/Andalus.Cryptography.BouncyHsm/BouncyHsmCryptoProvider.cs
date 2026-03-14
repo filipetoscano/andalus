@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using Andalus.Cryptography.Pkcs11;
+using System.Runtime.InteropServices;
 
 namespace Andalus.Cryptography.BouncyHsm;
 
@@ -7,17 +8,30 @@ namespace Andalus.Cryptography.BouncyHsm;
 /// bundled inside the <c>BouncyHsm.Client</c> NuGet package.
 /// Intended for development and integration testing only.
 /// </summary>
-public class BouncyHsmCryptoProvider : Pkcs11.Pkcs11CryptoProvider
+public class BouncyHsmCryptoProvider : Pkcs11CryptoProvider
 {
     /// <summary />
     public BouncyHsmCryptoProvider( BouncyHsmCryptoProviderOptions options )
-        : base( new Pkcs11.Pkcs11CryptoProviderOptions
+        : base( CreatePkcs11Options( options ) )
+    {
+    }
+
+
+    /// <summary />
+    private static Pkcs11CryptoProviderOptions CreatePkcs11Options( BouncyHsmCryptoProviderOptions options )
+    {
+        if ( options.Endpoint != null )
+        {
+            Environment.SetEnvironmentVariable( "BOUNCY_HSM_CFG_STRING",
+                $"Server={options.Endpoint.Host}; Port={options.Endpoint.Port};" );
+        }
+
+        return new Pkcs11CryptoProviderOptions
         {
             LibraryPath = ResolvePkcs11LibraryPath(),
             SlotId = options.SlotId,
             UserPin = options.UserPin,
-        } )
-    {
+        };
     }
 
 
