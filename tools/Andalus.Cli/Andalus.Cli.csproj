@@ -7,4 +7,18 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="5.0.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.3" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.3" />
+    <PackageReference Include="Spectre.Console" Version="0.54.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Andalus.Cryptography.AwsKms\Andalus.Cryptography.AwsKms.csproj" />
+    <ProjectReference Include="..\..\src\Andalus.Cryptography.BouncyHsm\Andalus.Cryptography.BouncyHsm.csproj" />
+    <ProjectReference Include="..\..\src\Andalus.Cryptography.GoogleKms\Andalus.Cryptography.GoogleKms.csproj" />
+    <ProjectReference Include="..\..\src\Andalus.Cryptography.KeyVault\Andalus.Cryptography.KeyVault.csproj" />
+  </ItemGroup>
+
 </Project>
