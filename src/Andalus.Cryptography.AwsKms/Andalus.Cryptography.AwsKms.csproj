@@ -10,4 +10,8 @@
     <PackageReference Include="AWSSDK.KeyManagementService" Version="4.0.9.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Andalus.Cryptography\Andalus.Cryptography.csproj" />
+  </ItemGroup>
+
 </Project>
