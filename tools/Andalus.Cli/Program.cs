@@ -9,6 +9,7 @@ namespace Andalus.Cli;
 
 /// <summary />
 [Command( "andalus", Description = "" )]
+[Subcommand( typeof( CertificateCommand ) )]
 [Subcommand( typeof( CsrCommand ) )]
 [Subcommand( typeof( HashCommand ) )]
 [Subcommand( typeof( KeyCommand ) )]

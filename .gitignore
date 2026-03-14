@@ -7,6 +7,7 @@
 # Specific
 /*.txt
 /tools/Andalus.Cli/*.cmd
+/tools/Andalus.Cli/*.cer
 /tools/Andalus.Cli/*.json
 /tools/Andalus.Cli/*.txt
 /tools/Andalus.Cli/*.xml
