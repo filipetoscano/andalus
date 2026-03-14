@@ -63,7 +63,9 @@ public class KeyVaultCryptoProvider : ICryptoProvider
     {
         var key = new KeyVaultKeyIdentifier( new Uri( keyId ) );
 
-        await _kc.StartDeleteKeyAsync( key.Name, cancellationToken );
+        var op = await _kc.StartDeleteKeyAsync( key.Name, cancellationToken );
+
+        await op.WaitForCompletionAsync();
     }
 
 
@@ -77,7 +79,7 @@ public class KeyVaultCryptoProvider : ICryptoProvider
         var bytes = hash.ToArray();
 
         var key = new KeyVaultKeyIdentifier( new Uri( keyId ) );
-        var client = _kc.GetCryptographyClient( key.Name );
+        var client = _kc.GetCryptographyClient( key.Name, key.Version );
         var result = await client.SignAsync( SignatureAlgorithm.ES256K, bytes, cancellationToken );
 
         return new SignResult()
@@ -96,7 +98,7 @@ public class KeyVaultCryptoProvider : ICryptoProvider
         var signBytes = signature.ToArray();
 
         var key = new KeyVaultKeyIdentifier( new Uri( keyId ) );
-        var client = _kc.GetCryptographyClient( key.Name );
+        var client = _kc.GetCryptographyClient( key.Name, key.Version );
         var result = await client.VerifyAsync( SignatureAlgorithm.ES256K, hashBytes, signBytes, cancellationToken );
 
         return result.IsValid;
