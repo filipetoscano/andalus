@@ -1,6 +1,7 @@
 ﻿using McMaster.Extensions.CommandLineUtils;
 using Spectre.Console;
 using System.ComponentModel.DataAnnotations;
+using System.Formats.Asn1;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
@@ -76,8 +77,8 @@ public class CertificateViewCommand
 
 
         /*
-     * Issuer
-     */
+         *
+         */
         AnsiConsole.MarkupLine( "[bold]Issuer[/]" );
 
         var issuer = new Table();
@@ -104,7 +105,7 @@ public class CertificateViewCommand
 
 
         /*
-         * Public Key
+         *
          */
         AnsiConsole.MarkupLine( "[bold]Public Key[/]" );
 
@@ -135,7 +136,7 @@ public class CertificateViewCommand
 
 
         /*
-         * Extensions
+         *
          */
         if ( crt.Extensions.Count > 0 )
         {
@@ -211,8 +212,158 @@ public class CertificateViewCommand
                 => string.Join( ", ", san.EnumerateDnsNames().Select( d => $"DNS:{d}" )
                     .Concat( san.EnumerateIPAddresses().Select( ip => $"IP:{ip}" ) ) ),
 
-            _ => Convert.ToHexString( extension.RawData.AsSpan( 0, Math.Min( extension.RawData.Length, 32 ) ) )
-                  + ( extension.RawData.Length > 32 ? "..." : "" ),
+            _ when extension.Oid?.Value == "2.5.29.32"
+                => FormatCertificatePolicies( extension.RawData ),
+
+            _ => FormatRawOrText( extension ),
         };
+    }
+
+
+    /// <summary />
+    private static string FormatCertificatePolicies( byte[] rawData )
+    {
+        var lines = new List<string>();
+
+        try
+        {
+            var reader = new AsnReader( rawData, AsnEncodingRules.DER );
+            var policies = reader.ReadSequence();
+            var index = 1;
+
+            while ( policies.HasData )
+            {
+                var policyInfo = policies.ReadSequence();
+                var policyOid = policyInfo.ReadObjectIdentifier();
+
+                lines.Add( $"[{index}] Policy: {policyOid}" );
+
+                if ( policyInfo.HasData )
+                {
+                    var qualifiers = policyInfo.ReadSequence();
+                    var qualIndex = 1;
+
+                    while ( qualifiers.HasData )
+                    {
+                        var qualInfo = qualifiers.ReadSequence();
+                        var qualOid = qualInfo.ReadObjectIdentifier();
+
+                        if ( qualOid == "1.3.6.1.5.5.7.2.1" )
+                        {
+                            // CPS URI
+                            var cpsUri = qualInfo.ReadCharacterString( UniversalTagNumber.IA5String );
+                            lines.Add( $"    [{index},{qualIndex}] CPS: {cpsUri}" );
+                        }
+                        else if ( qualOid == "1.3.6.1.5.5.7.2.2" )
+                        {
+                            // User Notice
+                            var userNotice = qualInfo.ReadSequence();
+                            var noticeText = ReadUserNoticeText( userNotice );
+
+                            lines.Add( $"    [{index},{qualIndex}] User Notice: {noticeText}" );
+                        }
+                        else
+                        {
+                            lines.Add( $"    [{index},{qualIndex}] Qualifier: {qualOid}" );
+                        }
+
+                        qualIndex++;
+                    }
+                }
+
+                index++;
+            }
+        }
+        catch
+        {
+            lines.Add( Convert.ToHexString( rawData ) );
+        }
+
+        return string.Join( "\n", lines );
+    }
+
+
+    /// <summary />
+    private static string ReadUserNoticeText( AsnReader userNotice )
+    {
+        // UserNotice ::= SEQUENCE {
+        //   noticeRef   [0] NoticeReference OPTIONAL,
+        //   explicitText    DisplayText OPTIONAL }
+        //
+        // DisplayText ::= CHOICE {
+        //   ia5String     IA5String,
+        //   visibleString VisibleString,
+        //   bmpString     BMPString,
+        //   utf8String    UTF8String }
+
+        while ( userNotice.HasData )
+        {
+            var tag = userNotice.PeekTag();
+
+            if ( tag == Asn1Tag.Sequence )
+            {
+                // NoticeReference — skip
+                userNotice.ReadSequence();
+                continue;
+            }
+
+            if ( tag.TagClass == TagClass.ContextSpecific )
+            {
+                userNotice.ReadEncodedValue();
+                continue;
+            }
+
+            return tag.TagValue switch
+            {
+                (int) UniversalTagNumber.UTF8String
+                    => userNotice.ReadCharacterString( UniversalTagNumber.UTF8String ),
+
+                (int) UniversalTagNumber.IA5String
+                    => userNotice.ReadCharacterString( UniversalTagNumber.IA5String ),
+
+                (int) UniversalTagNumber.VisibleString
+                    => userNotice.ReadCharacterString( UniversalTagNumber.VisibleString ),
+
+                (int) UniversalTagNumber.BMPString
+                    => userNotice.ReadCharacterString( UniversalTagNumber.BMPString ),
+
+                _ => Convert.ToBase64String( userNotice.ReadEncodedValue().Span ),
+            };
+        }
+
+        return "";
+    }
+
+
+    /// <summary />
+    private static string FormatRawOrText( X509Extension extension )
+    {
+        // Try to decode as a simple OCTET STRING wrapping printable text
+        try
+        {
+            var reader = new AsnReader( extension.RawData, AsnEncodingRules.DER );
+            var tag = reader.PeekTag();
+
+            if ( tag.TagValue == (int) UniversalTagNumber.OctetString )
+            {
+                var bytes = reader.ReadOctetString();
+
+                // If it looks like Base64 or ASCII text, show it
+                if ( bytes.All( b => b >= 0x20 && b < 0x7F ) )
+                    return System.Text.Encoding.ASCII.GetString( bytes );
+
+                return Convert.ToBase64String( bytes );
+            }
+
+            if ( tag.TagValue == (int) UniversalTagNumber.UTF8String )
+                return reader.ReadCharacterString( UniversalTagNumber.UTF8String );
+        }
+        catch
+        {
+        }
+
+        // Fallback: hex dump
+        return Convert.ToHexString( extension.RawData.AsSpan( 0, Math.Min( extension.RawData.Length, 32 ) ) )
+            + ( extension.RawData.Length > 32 ? "..." : "" );
     }
 }
