@@ -7,11 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BouncyHsm.Client" Version="2.0.1" />
+    <PackageReference Include="Pkcs11Interop" Version="5.3.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Andalus.Cryptography.Pkcs11\Andalus.Cryptography.Pkcs11.csproj" />
+    <ProjectReference Include="..\Andalus.Cryptography\Andalus.Cryptography.csproj" />
   </ItemGroup>
 
 </Project>

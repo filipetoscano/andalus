@@ -1,4 +1,5 @@
 ﻿using Andalus.Cryptography;
+using Andalus.Cryptography.BouncyHsm;
 using Andalus.Cryptography.KeyVault;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.DependencyInjection;
@@ -36,6 +37,14 @@ public class Program
                 } );
 
                 return new KeyStoreCryptoProvider( ks );
+            }
+            else if ( prov == "bouncy" )
+            {
+                return new BouncyHsmCryptoProvider( new BouncyHsmCryptoProviderOptions()
+                {
+                    SlotId = 2,
+                    UserPin = "1234",
+                } );
             }
             else if ( prov == "keyvault" )
             {

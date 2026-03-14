@@ -16,8 +16,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Andalus.Cryptography.AwsKms\Andalus.Cryptography.AwsKms.csproj" />
+    <ProjectReference Include="..\..\src\Andalus.Cryptography.BouncyHsm\Andalus.Cryptography.BouncyHsm.csproj" />
     <ProjectReference Include="..\..\src\Andalus.Cryptography.GoogleKms\Andalus.Cryptography.GoogleKms.csproj" />
     <ProjectReference Include="..\..\src\Andalus.Cryptography.KeyVault\Andalus.Cryptography.KeyVault.csproj" />
+    <ProjectReference Include="..\..\src\Andalus.Cryptography.Pkcs11\Andalus.Cryptography.Pkcs11.csproj" />
   </ItemGroup>
 
 </Project>

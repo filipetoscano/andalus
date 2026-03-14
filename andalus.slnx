@@ -14,6 +14,7 @@
     <Project Path="src/Andalus.Cryptography.BouncyHsm/Andalus.Cryptography.BouncyHsm.csproj" Id="974683b3-77d2-4299-b385-319381472bb4" />
     <Project Path="src/Andalus.Cryptography.GoogleKms/Andalus.Cryptography.GoogleKms.csproj" />
     <Project Path="src/Andalus.Cryptography.KeyVault/Andalus.Cryptography.KeyVault.csproj" Id="8b69e290-1d61-4b9a-b2cd-ab18b81b63e7" />
+    <Project Path="src/Andalus.Cryptography.Pkcs11/Andalus.Cryptography.Pkcs11.csproj" />
     <Project Path="src/Andalus.Cryptography/Andalus.Cryptography.csproj" Id="41eb5df4-dc54-417d-99f0-d853f25a2429" />
     <Project Path="src/Andalus.Xml/Andalus.Xml.csproj" Id="79181870-3b42-4f6c-a170-1ccfe52e0c8c" />
   </Folder>
