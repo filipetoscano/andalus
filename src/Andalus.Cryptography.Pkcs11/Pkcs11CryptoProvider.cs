@@ -6,10 +6,10 @@ using System.Security.Cryptography;
 namespace Andalus.Cryptography.Pkcs11;
 
 /// <summary />
-public class Pkcs11CryptoProvider : ICryptoProvider
+public class Pkcs11CryptoProvider : ICryptoProvider, IDisposable
 {
     private static readonly Pkcs11InteropFactories _factories = new();
-    private static readonly ConcurrentDictionary<string, IPkcs11Library> _libraries = new();
+    private static readonly ConcurrentDictionary<string, SharedPkcs11Library> _libraries = new();
 
     private readonly Pkcs11CryptoProviderOptions _options;
     private readonly IPkcs11Library _pkcs11;
@@ -21,12 +21,13 @@ public class Pkcs11CryptoProvider : ICryptoProvider
     {
         _options = options;
 
-        _pkcs11 = _libraries.GetOrAdd(
-            Path.GetFullPath( options.LibraryPath ),
-            path => _factories.Pkcs11LibraryFactory.LoadPkcs11Library(
-                _factories,
-                path,
-                AppType.MultiThreaded ) );
+        var fullPath = Path.GetFullPath( options.LibraryPath );
+
+        var shared = _libraries.GetOrAdd( fullPath,
+            path => new SharedPkcs11Library( path, _factories ) );
+
+        shared.AddRef();
+        _pkcs11 = shared.Library;
 
         _slot = _pkcs11
             .GetSlotList( SlotsType.WithTokenPresent )
@@ -184,6 +185,22 @@ public class Pkcs11CryptoProvider : ICryptoProvider
         var session = _slot.OpenSession( type );
         session.Login( CKU.CKU_USER, _options.UserPin );
         return session;
+    }
+
+
+    /// <summary />
+    public void Dispose()
+    {
+        var fullPath = Path.GetFullPath( _options.LibraryPath );
+
+        if ( _libraries.TryGetValue( fullPath, out var shared ) )
+        {
+            if ( shared.Release() == 0 )
+            {
+                _libraries.TryRemove( fullPath, out _ );
+                shared.Library.Dispose(); // calls C_Finalize
+            }
+        }
     }
 
 

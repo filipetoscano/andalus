@@ -25,7 +25,7 @@ public class Program
         var svc = new ServiceCollection();
         svc.AddOptions();
 
-        svc.AddTransient<ICryptoProvider>( x =>
+        svc.AddSingleton<ICryptoProvider>( x =>
         {
             var prov = Environment.GetEnvironmentVariable( "ANDALUS_HSM_PROVIDER" )?.ToLowerInvariant() ?? "keyvault";
 
@@ -62,7 +62,7 @@ public class Program
         } );
 
 
-        var sp = svc.BuildServiceProvider();
+        using var sp = svc.BuildServiceProvider();
 
 
         /*
