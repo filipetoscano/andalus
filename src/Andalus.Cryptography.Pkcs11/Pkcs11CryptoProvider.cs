@@ -1,14 +1,17 @@
 ﻿using Net.Pkcs11Interop.Common;
 using Net.Pkcs11Interop.HighLevelAPI;
+using System.Collections.Concurrent;
 using System.Security.Cryptography;
 
 namespace Andalus.Cryptography.Pkcs11;
 
 /// <summary />
-public class Pkcs11CryptoProvider : ICryptoProvider, IDisposable
+public class Pkcs11CryptoProvider : ICryptoProvider
 {
+    private static readonly Pkcs11InteropFactories _factories = new();
+    private static readonly ConcurrentDictionary<string, IPkcs11Library> _libraries = new();
+
     private readonly Pkcs11CryptoProviderOptions _options;
-    private readonly Pkcs11InteropFactories _factories;
     private readonly IPkcs11Library _pkcs11;
     private readonly ISlot _slot;
 
@@ -17,12 +20,13 @@ public class Pkcs11CryptoProvider : ICryptoProvider, IDisposable
     public Pkcs11CryptoProvider( Pkcs11CryptoProviderOptions options )
     {
         _options = options;
-        _factories = new Pkcs11InteropFactories();
 
-        _pkcs11 = _factories.Pkcs11LibraryFactory.LoadPkcs11Library(
-            _factories,
-            options.LibraryPath,
-            AppType.MultiThreaded );
+        _pkcs11 = _libraries.GetOrAdd(
+            Path.GetFullPath( options.LibraryPath ),
+            path => _factories.Pkcs11LibraryFactory.LoadPkcs11Library(
+                _factories,
+                path,
+                AppType.MultiThreaded ) );
 
         _slot = _pkcs11
             .GetSlotList( SlotsType.WithTokenPresent )
@@ -61,10 +65,28 @@ public class Pkcs11CryptoProvider : ICryptoProvider, IDisposable
 
         var handle = FindKey( session, CKO.CKO_PUBLIC_KEY, key.KeyId );
 
-        var attrs = session.GetAttributeValue( handle,
-            new List<CKA> { CKA.CKA_PUBLIC_KEY_INFO } );
+        // Try CKA_PUBLIC_KEY_INFO first (PKCS#11 v2.40+)
+        try
+        {
+            var attrs = session.GetAttributeValue( handle,
+                new List<CKA> { CKA.CKA_PUBLIC_KEY_INFO } );
 
-        return Task.FromResult( attrs[ 0 ].GetValueAsByteArray() );
+            var value = attrs[ 0 ].GetValueAsByteArray();
+
+            if ( value is { Length: > 0 } )
+                return Task.FromResult( value );
+        }
+        catch
+        {
+            // Not supported by this token, fall through
+        }
+
+        // Reconstruct SubjectPublicKeyInfo from raw attributes
+        var spki = key.KeyType.Family() == KeyFamily.Ecdsa
+            ? BuildEcSubjectPublicKeyInfo( session, handle )
+            : BuildRsaSubjectPublicKeyInfo( session, handle );
+
+        return Task.FromResult( spki );
     }
 
 
@@ -151,17 +173,12 @@ public class Pkcs11CryptoProvider : ICryptoProvider, IDisposable
     }
 
 
-    /// <summary />
-    public void Dispose()
-    {
-        _pkcs11?.Dispose();
-    }
-
-
     /*
      * Session management
      */
 
+
+    /// <summary />
     private ISession OpenUserSession( SessionType type )
     {
         var session = _slot.OpenSession( type );
@@ -174,6 +191,8 @@ public class Pkcs11CryptoProvider : ICryptoProvider, IDisposable
      * Key generation
      */
 
+
+    /// <summary />
     private (IObjectHandle pub, IObjectHandle prv) GenerateEcKeyPair(
         ISession session,
         KeyCreationOptions options )
@@ -209,6 +228,7 @@ public class Pkcs11CryptoProvider : ICryptoProvider, IDisposable
     }
 
 
+    /// <summary />
     private (IObjectHandle pub, IObjectHandle prv) GenerateRsaKeyPair(
         ISession session,
         KeyCreationOptions options )
@@ -257,6 +277,7 @@ public class Pkcs11CryptoProvider : ICryptoProvider, IDisposable
      * Object lookup
      */
 
+    /// <summary />
     private IObjectHandle FindKey( ISession session, CKO objectClass, string keyId )
     {
         var ckaId = Convert.FromHexString( keyId );
@@ -273,6 +294,7 @@ public class Pkcs11CryptoProvider : ICryptoProvider, IDisposable
     }
 
 
+    /// <summary />
     private string ReadCkaId( ISession session, IObjectHandle handle )
     {
         var attrs = session.GetAttributeValue( handle, new List<CKA> { CKA.CKA_ID } );
@@ -308,4 +330,105 @@ public class Pkcs11CryptoProvider : ICryptoProvider, IDisposable
         _ => throw new NotSupportedException( $"'{keyType}' is not supported." )
     };
 
+
+
+    /// <summary />
+    private static byte[] BuildRsaSubjectPublicKeyInfo( ISession session, IObjectHandle handle )
+    {
+        var attrs = session.GetAttributeValue( handle,
+            new List<CKA> { CKA.CKA_MODULUS, CKA.CKA_PUBLIC_EXPONENT } );
+
+        var modulus = attrs[ 0 ].GetValueAsByteArray();
+        var exponent = attrs[ 1 ].GetValueAsByteArray();
+
+        using var rsa = RSA.Create();
+
+        rsa.ImportParameters( new RSAParameters
+        {
+            Modulus = modulus,
+            Exponent = exponent,
+        } );
+
+        return rsa.ExportSubjectPublicKeyInfo();
+    }
+
+
+    /// <summary />
+    private static byte[] BuildEcSubjectPublicKeyInfo( ISession session, IObjectHandle handle )
+    {
+        var attrs = session.GetAttributeValue( handle,
+            new List<CKA> { CKA.CKA_EC_PARAMS, CKA.CKA_EC_POINT } );
+
+        var ecParamsOid = attrs[ 0 ].GetValueAsByteArray();
+        var ecPointRaw = attrs[ 1 ].GetValueAsByteArray();
+
+        // CKA_EC_POINT: DER OCTET STRING wrapping the uncompressed point.
+        // Strip the outer OCTET STRING tag+length to get raw 04||x||y.
+        var ecPoint = UnwrapOctetString( ecPointRaw );
+
+        // Determine the curve from the DER-encoded OID
+        var curve = MapOidToCurve( ecParamsOid );
+
+        // Split 04||x||y into coordinates
+        var coordLen = ( ecPoint.Length - 1 ) / 2;
+
+        var ecParameters = new ECParameters
+        {
+            Curve = curve,
+            Q = new ECPoint
+            {
+                X = ecPoint[ 1..( coordLen + 1 ) ],
+                Y = ecPoint[ ( coordLen + 1 ).. ],
+            },
+        };
+
+        using var ecdsa = ECDsa.Create( ecParameters );
+        return ecdsa.ExportSubjectPublicKeyInfo();
+    }
+
+
+    /// <summary />
+    private static byte[] UnwrapOctetString( byte[] data )
+    {
+        // If it starts with 0x04 (OCTET STRING tag) and the length matches,
+        // it's DER-wrapped. Otherwise it's already the raw point.
+        if ( data.Length > 2 && data[ 0 ] == 0x04 )
+        {
+            var contentLen = data[ 1 ] switch
+            {
+                < 0x80 => (int) data[ 1 ],
+                0x81 => data[ 2 ],
+                _ => -1,
+            };
+
+            var headerLen = data[ 1 ] < 0x80 ? 2 : 3;
+
+            if ( contentLen == data.Length - headerLen )
+                return data[ headerLen.. ];
+        }
+
+        return data;
+    }
+
+
+    /// <summary />
+    private static ECCurve MapOidToCurve( byte[] derEncodedOid )
+    {
+        ReadOnlySpan<byte> oid = derEncodedOid;
+
+        if ( oid.SequenceEqual( (ReadOnlySpan<byte>) [ 0x06, 0x08, 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x03, 0x01, 0x07 ] ) )
+            return ECCurve.NamedCurves.nistP256;
+
+        if ( oid.SequenceEqual( (ReadOnlySpan<byte>) [ 0x06, 0x05, 0x2B, 0x81, 0x04, 0x00, 0x22 ] ) )
+            return ECCurve.NamedCurves.nistP384;
+
+        if ( oid.SequenceEqual( (ReadOnlySpan<byte>) [ 0x06, 0x05, 0x2B, 0x81, 0x04, 0x00, 0x23 ] ) )
+            return ECCurve.NamedCurves.nistP521;
+
+        if ( oid.SequenceEqual( (ReadOnlySpan<byte>) [ 0x06, 0x05, 0x2B, 0x81, 0x04, 0x00, 0x0A ] ) )
+            return ECCurve.CreateFromValue( "1.3.132.0.10" );
+
+        throw new NotSupportedException(
+            $"Unknown EC curve OID: {Convert.ToHexString( derEncodedOid )}" );
+    }
 }
