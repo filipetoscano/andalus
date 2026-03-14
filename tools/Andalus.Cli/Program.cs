@@ -27,7 +27,7 @@ public class Program
 
         svc.AddSingleton<ICryptoProvider>( x =>
         {
-            var prov = Environment.GetEnvironmentVariable( "ANDALUS_HSM_PROVIDER" )?.ToLowerInvariant() ?? "keyvault";
+            var prov = Environment.GetEnvironmentVariable( "ANDALUS_CRYPTO_PROVIDER" )?.ToLowerInvariant() ?? "keyvault";
 
             if ( prov == "file" )
             {
@@ -40,15 +40,18 @@ public class Program
             }
             else if ( prov == "bouncy" )
             {
+                var slotId = int.Parse( Environment.GetEnvironmentVariable( "ANDALUS_BOUNCY_SLOTID" ) ?? "1" );
+                var userPin = Environment.GetEnvironmentVariable( "ANDALUS_BOUNCY_USERPIN" ) ?? "";
+
                 return new BouncyHsmCryptoProvider( new BouncyHsmCryptoProviderOptions()
                 {
-                    SlotId = 2,
-                    UserPin = "1234",
+                    SlotId = slotId,
+                    UserPin = userPin,
                 } );
             }
             else if ( prov == "keyvault" )
             {
-                var kvid = Environment.GetEnvironmentVariable( "ANDALUS_HSM_KEYVAULT" ) ?? throw new ApplicationException( "Missing ANDALUS_HSM_KEYVAULT" );
+                var kvid = Environment.GetEnvironmentVariable( "ANDALUS_KEYVAULT" ) ?? throw new ApplicationException( "Missing ANDALUS_KEYVAULT" );
 
                 return new KeyVaultCryptoProvider( new KeyVaultCryptoProviderOptions()
                 {

@@ -9,7 +9,7 @@ public class BouncyHsmCryptoProviderOptions
     /// <remarks>
     /// Default: https://localhost:5000/
     /// </remarks>
-    public required Uri? Endpoint { get; init; }
+    public Uri? Endpoint { get; init; }
 
     /// <summary>
     /// Slot ID of the token to use.
