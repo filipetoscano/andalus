@@ -10,4 +10,8 @@
     <PackageReference Include="Google.Cloud.Kms.V1" Version="3.23.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Andalus.Cryptography\Andalus.Cryptography.csproj" />
+  </ItemGroup>
+
 </Project>
