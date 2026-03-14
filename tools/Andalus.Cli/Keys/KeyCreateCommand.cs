@@ -25,12 +25,17 @@ public class KeyCreateCommand
 
 
     /// <summary />
+    [Option( "-t|--type", CommandOptionType.SingleValue, Description = "" )]
+    public KeyType KeyType { get; set; } = KeyType.EcdsaSecp256k1;
+
+
+    /// <summary />
     public async Task<int> OnExecuteAsync()
     {
         var kp = await _crypto.CreateKeyPairAsync( new KeyCreationOptions()
         {
             KeyName = this.KeyName!,
-            KeyType = KeyType.EcdsaSecp256k1,
+            KeyType = this.KeyType,
             Exportable = false,
         } );
 
