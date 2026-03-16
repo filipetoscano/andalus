@@ -43,10 +43,11 @@ public class CertificateViewCommand
         general.AddRow( "Version", $"V{crt.Version}" );
         general.AddRow( "Serial Number", crt.SerialNumber );
         general.AddRow( "Signature Algorithm", crt.SignatureAlgorithm.FriendlyName ?? crt.SignatureAlgorithm.Value ?? "" );
-        general.AddRow( "Not Before", crt.NotBefore.ToString( "u" ) );
-        general.AddRow( "Not After", crt.NotAfter.ToString( "u" ) );
+        general.AddRow( "Not Before", crt.NotBefore.ToUniversalTime().ToString( "u" ) );
+        general.AddRow( "Not After", crt.NotAfter.ToUniversalTime().ToString( "u" ) );
         general.AddRow( "Thumbprint (SHA1)", crt.Thumbprint );
-        general.AddRow( "Thumbprint (SHA256)", Convert.ToHexString( crt.GetCertHash( System.Security.Cryptography.HashAlgorithmName.SHA256 ) ) );
+        general.AddRow( "Thumbprint (SHA256)", Convert.ToHexString( crt.GetCertHash( HashAlgorithmName.SHA256 ) ) );
+        general.AddRow( "Thumbprint (SHA256)", Convert.ToBase64String( crt.GetCertHash( HashAlgorithmName.SHA256 ) ) );
         general.AddRow( "Has Private Key", crt.HasPrivateKey.ToString() );
 
         AnsiConsole.Write( general );
@@ -58,22 +59,22 @@ public class CertificateViewCommand
          */
         AnsiConsole.MarkupLine( "[bold]Subject[/]" );
 
-        var table = new Table();
-        table.Border = TableBorder.SimpleHeavy;
-        table.AddColumn( "Oid" );
-        table.AddColumn( "Name" );
-        table.AddColumn( "Value" );
+        var subject = new Table();
+        subject.Border = TableBorder.SimpleHeavy;
+        subject.AddColumn( "Oid" );
+        subject.AddColumn( "Name" );
+        subject.AddColumn( "Value" );
 
         foreach ( var dn in crt.SubjectName.EnumerateRelativeDistinguishedNames() )
         {
-            table.AddRow(
+            subject.AddRow(
                 new Markup( dn.GetSingleElementType().Value ?? "" ),
                 new Markup( dn.GetSingleElementType().FriendlyName ?? "" ),
                 new Markup( dn.GetSingleElementValue() ?? "" )
             );
         }
 
-        AnsiConsole.Write( table );
+        AnsiConsole.Write( subject );
 
 
         /*
@@ -97,7 +98,8 @@ public class CertificateViewCommand
         }
 
         var isSelfSigned = crt.SubjectName.RawData.AsSpan().SequenceEqual( crt.IssuerName.RawData );
-        if ( isSelfSigned )
+
+        if ( isSelfSigned == true )
             issuer.Caption( "[dim](self-signed)[/]" );
 
         AnsiConsole.Write( issuer );
@@ -171,9 +173,9 @@ public class CertificateViewCommand
          */
         AnsiConsole.MarkupLine( "[bold]Validation[/]" );
 
-        var isExpired = crt.NotAfter < DateTime.UtcNow;
-        var isNotYetValid = crt.NotBefore > DateTime.UtcNow;
-        var daysRemaining = ( crt.NotAfter - DateTime.UtcNow ).Days;
+        var isExpired = crt.NotAfter.ToUniversalTime() < DateTime.UtcNow;
+        var isNotYetValid = crt.NotBefore.ToUniversalTime() > DateTime.UtcNow;
+        var daysRemaining = ( crt.NotAfter.ToUniversalTime() - DateTime.UtcNow ).Days;
 
         if ( isExpired )
             AnsiConsole.MarkupLine( "[red]  EXPIRED[/]" );
