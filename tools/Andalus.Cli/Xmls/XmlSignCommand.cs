@@ -40,6 +40,10 @@ public class XmlSignCommand
     public string? InputPath { get; set; }
 
     /// <summary />
+    [Option( "-t|--type", CommandOptionType.SingleValue, Description = "Output filename" )]
+    public SignatureType SignatureType { get; set; } = SignatureType.Enveloping;
+
+    /// <summary />
     [Option( "-o|--output", CommandOptionType.SingleValue, Description = "Output filename" )]
     public string? OutputPath { get; set; }
 
@@ -53,13 +57,20 @@ public class XmlSignCommand
 
         var x509 = X509CertificateLoader.LoadCertificateFromFile( this.CertificatePath! );
 
-        var signed = XmlDigSig.SignEnveloping( doc, _crypto, this.KeyReference!, HashAlgorithmName.SHA256, new XmlDigSigOptions()
+
+        /*
+         * 
+         */
+        var signed = XmlDigSig.Sign( this.SignatureType, doc, _crypto, this.KeyReference!, HashAlgorithmName.SHA256, new XmlDigSigOptions()
         {
             AddKeyInfo = KeyInfoPart.Certificate | KeyInfoPart.IssuerSerial,
             Certificate = x509,
         } );
 
 
+        /*
+         * 
+         */
         if ( this.OutputPath != null )
         {
             using var writer = XmlWriter.Create( this.OutputPath, new XmlWriterSettings
