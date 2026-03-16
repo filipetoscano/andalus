@@ -8,7 +8,7 @@ using System.Security.Cryptography.X509Certificates;
 namespace Andalus.Cli.Certificates;
 
 /// <summary />
-[Command( "view", Description = "Views a certificate" )]
+[Command( "view", Description = "View a certificate" )]
 public class CertificateViewCommand
 {
     /// <summary />

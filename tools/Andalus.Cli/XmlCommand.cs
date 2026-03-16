@@ -3,7 +3,7 @@
 namespace Andalus.Cli;
 
 /// <summary />
-[Command( "xml" )]
+[Command( "xml", Description = "Xml operations" )]
 [Subcommand( typeof( Xmls.XmlSignCommand ) )]
 [Subcommand( typeof( Xmls.XmlVerifyCommand ) )]
 public class XmlCommand

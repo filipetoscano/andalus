@@ -3,7 +3,7 @@
 namespace Andalus.Cli;
 
 /// <summary />
-[Command( "key" )]
+[Command( "key", Description = "Keypair operations" )]
 [Subcommand( typeof( Keys.KeyCreateCommand ) )]
 [Subcommand( typeof( Keys.KeyGetCommand ) )]
 [Subcommand( typeof( Keys.KeyRemoveCommand ) )]

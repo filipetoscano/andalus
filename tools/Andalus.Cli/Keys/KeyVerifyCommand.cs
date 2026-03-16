@@ -6,7 +6,7 @@ using System.Security.Cryptography;
 namespace Andalus.Cli.Keys;
 
 /// <summary />
-[Command( "verify", Description = "Verifies a signature" )]
+[Command( "verify", Description = "Verify a signature" )]
 public class KeyVerifyCommand
 {
     private readonly ICryptoProvider _crypto;

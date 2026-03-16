@@ -3,7 +3,7 @@
 namespace Andalus.Cli;
 
 /// <summary />
-[Command( "csr" )]
+[Command( "csr", Description = "(CSR) Certificate signing requests operations" )]
 [Subcommand( typeof( Csrs.CsrCreateCommand ) )]
 [Subcommand( typeof( Csrs.CsrViewCommand ) )]
 public class CsrCommand

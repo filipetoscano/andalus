@@ -6,7 +6,7 @@ using System.Security.Cryptography;
 namespace Andalus.Cli.Keys;
 
 /// <summary />
-[Command( "sign", Description = "Signs a hash" )]
+[Command( "sign", Description = "Sign a hash" )]
 public class KeySignCommand
 {
     private readonly ICryptoProvider _crypto;

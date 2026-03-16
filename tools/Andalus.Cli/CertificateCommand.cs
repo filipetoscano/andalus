@@ -3,7 +3,7 @@
 namespace Andalus.Cli;
 
 /// <summary />
-[Command( "cert" )]
+[Command( "cert", Description = "X509 certificate operations" )]
 [Subcommand( typeof( Certificates.CertificateViewCommand ) )]
 public class CertificateCommand
 {

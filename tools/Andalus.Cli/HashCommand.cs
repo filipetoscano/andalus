@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 namespace Andalus.Cli;
 
 /// <summary />
+[Command( "hash", Description = "Hash a file" )]
 public class HashCommand
 {
     /// <summary />
