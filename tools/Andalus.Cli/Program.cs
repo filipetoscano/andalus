@@ -13,6 +13,7 @@ namespace Andalus.Cli;
 [Subcommand( typeof( CsrCommand ) )]
 [Subcommand( typeof( HashCommand ) )]
 [Subcommand( typeof( KeyCommand ) )]
+[Subcommand( typeof( XmlCommand ) )]
 [VersionOptionFromMember( MemberName = nameof( GetVersion ) )]
 public class Program
 {
@@ -29,7 +30,7 @@ public class Program
 
         svc.AddSingleton<ICryptoProvider>( x =>
         {
-            var prov = Environment.GetEnvironmentVariable( "ANDALUS_CRYPTO_PROVIDER" )?.ToLowerInvariant() ?? "keyvault";
+            var prov = Environment.GetEnvironmentVariable( "ANDALUS_CRYPTO_PROVIDER" )?.ToLowerInvariant() ?? "file";
 
             if ( prov == "file" )
             {

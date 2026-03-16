@@ -16,65 +16,117 @@ public class XmlDigSig
     }
 
 
-    /// <summary>
-    /// Generates a signature
-    /// </summary>
-    public static XmlElement GenerateSignature(
-        XmlDocument doc,
+    /// <summary />
+    public static XmlDocument SignEnveloped(
+        XmlDocument document,
         ICryptoProvider provider,
         KeyReference key,
         HashAlgorithmName hashAlgorithm,
-        XmlDigSigOptions? options )
+        XmlDigSigOptions? options = null )
     {
-        if ( doc.PreserveWhitespace == false )
+        if ( document.PreserveWhitespace == false )
             throw new InvalidOperationException( "Expected XML document to be initialized with PreserveWhitespace = true" );
 
-        // Create a proxy AsymmetricAlgorithm that delegates to the provider
-        using var proxy = CreateSigningProxy( provider, key, hashAlgorithm );
+        var signedXml = new SignedXml( document );
 
-        SignedXml signedXml = new SignedXml( doc );
-        signedXml.SigningKey = proxy;
-        signedXml.SignedInfo!.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
-        signedXml.SignedInfo.SignatureMethod = ToSignatureMethod( key.KeyType.Family(), hashAlgorithm );
-
-        // Reference to the document
-        Reference docRef = new Reference( "" );
+        var docRef = new Reference( "" );
         docRef.AddTransform( new XmlDsigEnvelopedSignatureTransform() );
         docRef.AddTransform( new XmlDsigExcC14NTransform() );
-        docRef.DigestMethod = ToDigestMethod( hashAlgorithm );
+
         signedXml.AddReference( docRef );
 
-        // Key Info
-        if ( options != null && options.AddKeyInfo != KeyInfoPart.None )
-        {
-            if ( options.Certificate is null )
-                throw new InvalidOperationException( "Certificate is required when adding key info." );
+        var xmlSig = ComputeSignature( signedXml, provider, key, hashAlgorithm, options );
+        document.DocumentElement!.AppendChild( document.ImportNode( xmlSig, true ) );
 
-            var x509Data = new KeyInfoX509Data();
+        return document;
+    }
 
-            if ( options.AddKeyInfo.HasFlag( KeyInfoPart.Certificate ) == true )
-                x509Data.AddCertificate( options.Certificate );
 
-            if ( options.AddKeyInfo.HasFlag( KeyInfoPart.IssuerSerial ) == true )
-                x509Data.AddIssuerSerial( options.Certificate.Issuer, options.Certificate.SerialNumber );
+    /// <summary />
+    public static XmlDocument SignEnveloping(
+        XmlDocument document,
+        ICryptoProvider provider,
+        KeyReference key,
+        HashAlgorithmName hashAlgorithm,
+        XmlDigSigOptions? options = null )
+    {
+        if ( document.PreserveWhitespace == false )
+            throw new InvalidOperationException( "Expected XML document to be initialized with PreserveWhitespace = true" );
 
-            if ( options.AddKeyInfo.HasFlag( KeyInfoPart.SubjectName ) == true )
-                x509Data.AddSubjectName( options.Certificate.Subject );
-
-            var keyInfo = new KeyInfo();
-            keyInfo.AddClause( x509Data );
-
-            signedXml.KeyInfo = keyInfo;
-        }
-
-        signedXml.ComputeSignature();
+        if ( document.DocumentElement == null )
+            throw new InvalidOperationException( "Expected XML document to have a document element" );
 
 
         /*
          * 
          */
-        XmlElement xmlSig = signedXml.GetXml();
-        return (XmlElement) doc.ImportNode( xmlSig, true );
+        var doc = new XmlDocument { PreserveWhitespace = true };
+        var signedXml = new SignedXml();
+
+        const string objectId = "signed-content";
+        var dataObject = new DataObject( objectId, "", "", (XmlElement) doc.ImportNode( document.DocumentElement, true ) );
+        signedXml.AddObject( dataObject );
+
+        var objRef = new Reference( $"#{objectId}" );
+        objRef.AddTransform( new XmlDsigExcC14NTransform() );
+        signedXml.AddReference( objRef );
+
+        var xmlSig = ComputeSignature( signedXml, provider, key, hashAlgorithm, options );
+        doc.AppendChild( doc.ImportNode( xmlSig, true ) );
+
+        return doc;
+    }
+
+
+    /// <summary />
+    public static XmlElement SignDetached(
+        XmlDocument document,
+        ICryptoProvider provider,
+        KeyReference key,
+        HashAlgorithmName hashAlgorithm,
+        XmlDigSigOptions? options = null )
+    {
+        if ( document.PreserveWhitespace == false )
+            throw new InvalidOperationException( "Expected XML document to be initialized with PreserveWhitespace = true" );
+
+
+        /*
+         * 
+         */
+        var signedXml = new SignedXml( document );
+
+        var extRef = new Reference( "" );
+        extRef.AddTransform( new XmlDsigExcC14NTransform() );
+        signedXml.AddReference( extRef );
+
+        return ComputeSignature( signedXml, provider, key, hashAlgorithm, options );
+    }
+
+
+    private static XmlElement ComputeSignature(
+        SignedXml signedXml,
+        ICryptoProvider provider,
+        KeyReference key,
+        HashAlgorithmName hashAlgorithm,
+        XmlDigSigOptions? options )
+    {
+        using var proxy = CreateSigningProxy( provider, key, hashAlgorithm );
+
+        signedXml.SigningKey = proxy;
+        signedXml.SignedInfo!.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
+        signedXml.SignedInfo.SignatureMethod = ToSignatureMethod( key.KeyType.Family(), hashAlgorithm );
+
+        // Set digest method on all references
+        var digestMethod = ToDigestMethod( hashAlgorithm );
+
+        foreach ( Reference reference in signedXml.SignedInfo.References )
+            reference.DigestMethod = digestMethod;
+
+        AddKeyInfo( signedXml, options );
+
+        signedXml.ComputeSignature();
+
+        return signedXml.GetXml();
     }
 
 
@@ -96,6 +148,33 @@ public class XmlDigSig
 
             _ => throw new NotSupportedException( $"Key type '{key.KeyType}' is not supported." )
         };
+    }
+
+
+    /// <summary />
+    private static void AddKeyInfo( SignedXml signedXml, XmlDigSigOptions? options )
+    {
+        if ( options == null || options.AddKeyInfo == KeyInfoPart.None )
+            return;
+
+        if ( options.Certificate is null )
+            throw new InvalidOperationException( "Certificate is required when adding key info." );
+
+        var x509Data = new KeyInfoX509Data();
+
+        if ( options.AddKeyInfo.HasFlag( KeyInfoPart.Certificate ) )
+            x509Data.AddCertificate( options.Certificate );
+
+        if ( options.AddKeyInfo.HasFlag( KeyInfoPart.IssuerSerial ) )
+            x509Data.AddIssuerSerial( options.Certificate.Issuer, options.Certificate.SerialNumber );
+
+        if ( options.AddKeyInfo.HasFlag( KeyInfoPart.SubjectName ) )
+            x509Data.AddSubjectName( options.Certificate.Subject );
+
+        var keyInfo = new KeyInfo();
+        keyInfo.AddClause( x509Data );
+
+        signedXml.KeyInfo = keyInfo;
     }
 
 
