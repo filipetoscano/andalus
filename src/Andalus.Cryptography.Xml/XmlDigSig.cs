@@ -76,6 +76,13 @@ public class XmlDigSig
         if ( document.PreserveWhitespace == false )
             throw new InvalidOperationException( "Expected XML document to be initialized with PreserveWhitespace = true" );
 
+        if ( detached.PreserveWhitespace == false )
+            throw new InvalidOperationException( "Expected XML document to be initialized with PreserveWhitespace = true" );
+
+
+        /*
+         * 
+         */
         var signatureElement = detached.DocumentElement;
 
         if ( signatureElement == null )
@@ -96,6 +103,13 @@ public class XmlDigSig
         if ( document.PreserveWhitespace == false )
             throw new InvalidOperationException( "Expected XML document to be initialized with PreserveWhitespace = true" );
 
+        if ( detached.PreserveWhitespace == false )
+            throw new InvalidOperationException( "Expected XML document to be initialized with PreserveWhitespace = true" );
+
+
+        /*
+         * 
+         */
         var signatureElement = detached.DocumentElement;
 
         if ( signatureElement == null )
@@ -127,7 +141,7 @@ public class XmlDigSig
         if ( signatureType == SignatureType.Detached )
             return SignDetached( document, provider, key, hashAlgorithm, options );
 
-        throw new InvalidOperationException();
+        throw new ArgumentOutOfRangeException( nameof( signatureType ) );
     }
 
 
@@ -142,17 +156,30 @@ public class XmlDigSig
         if ( document.PreserveWhitespace == false )
             throw new InvalidOperationException( "Expected XML document to be initialized with PreserveWhitespace = true" );
 
+
+        /*
+         * 
+         */
         var enveloped = options?.EnvelopedSignaturePlacement ?? new FirstChildPlacement();
         enveloped.EnsureLocation( document );
 
+
+        /*
+         * 
+         */
+        var docRef = CreateReference( "", options, enveloped: true );
+
+
+        /*
+         * 
+         */
         var signedXml = new SignedXml( document );
-
-        var docRef = new Reference( "" );
-        docRef.AddTransform( new XmlDsigEnvelopedSignatureTransform() );
-        docRef.AddTransform( new XmlDsigExcC14NTransform() );
-
         signedXml.AddReference( docRef );
 
+
+        /*
+         * 
+         */
         var xmlSig = ComputeSignature( signedXml, provider, key, hashAlgorithm, options );
         var docSig = (XmlElement) document.ImportNode( xmlSig, true );
 
@@ -187,10 +214,17 @@ public class XmlDigSig
         var dataObject = new DataObject( objectId, "", "", (XmlElement) doc.ImportNode( document.DocumentElement, true ) );
         signedXml.AddObject( dataObject );
 
-        var objRef = new Reference( $"#{objectId}" );
-        objRef.AddTransform( new XmlDsigExcC14NTransform() );
+
+        /*
+         * 
+         */
+        var objRef = CreateReference( $"#{objectId}", options );
         signedXml.AddReference( objRef );
 
+
+        /*
+         * 
+         */
         var xmlSig = ComputeSignature( signedXml, provider, key, hashAlgorithm, options );
         doc.AppendChild( doc.ImportNode( xmlSig, true ) );
 
@@ -213,10 +247,9 @@ public class XmlDigSig
         /*
          * 
          */
-        var signedXml = new SignedXml( document );
+        var extRef = CreateReference( "", options );
 
-        var extRef = new Reference( "" );
-        extRef.AddTransform( new XmlDsigExcC14NTransform() );
+        var signedXml = new SignedXml( document );
         signedXml.AddReference( extRef );
 
 
@@ -233,6 +266,27 @@ public class XmlDigSig
     }
 
 
+    /// <summary />
+    private static Reference CreateReference( string uri, XmlDigSigOptions? options, bool enveloped = false )
+    {
+        var reference = new Reference( uri );
+
+        if ( enveloped )
+            reference.AddTransform( new XmlDsigEnvelopedSignatureTransform() );
+
+        if ( options?.ReferenceTransforms != null )
+        {
+            foreach ( var transform in options.ReferenceTransforms )
+                reference.AddTransform( transform );
+        }
+
+        reference.AddTransform( new XmlDsigExcC14NTransform() );
+
+        return reference;
+    }
+
+
+    /// <summary />
     private static XmlElement ComputeSignature(
         SignedXml signedXml,
         ICryptoProvider provider,

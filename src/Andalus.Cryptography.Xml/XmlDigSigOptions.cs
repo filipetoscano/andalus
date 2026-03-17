@@ -1,4 +1,5 @@
 ﻿using System.Security.Cryptography.X509Certificates;
+using System.Security.Cryptography.Xml;
 
 namespace Andalus.Cryptography.Xml;
 
@@ -13,4 +14,13 @@ public class XmlDigSigOptions
 
     /// <summary />
     public IEnvelopedSignaturePlacement? EnvelopedSignaturePlacement { get; set; }
+
+    /// <summary>
+    /// Additional transforms to apply to the document reference.
+    /// </summary>
+    /// <remarks>
+    /// Transforms will be added after the signature transformation and
+    /// before document canonicalization.
+    /// </remarks>
+    public List<Transform>? ReferenceTransforms { get; set; }
 }
