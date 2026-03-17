@@ -68,6 +68,46 @@ public class XmlDigSig
     }
 
 
+    /// <summary>
+    /// Verifies a detached signature.
+    /// </summary>
+    public static bool VerifyDetached( XmlDocument document, XmlDocument detached )
+    {
+        if ( document.PreserveWhitespace == false )
+            throw new InvalidOperationException( "Expected XML document to be initialized with PreserveWhitespace = true" );
+
+        var signatureElement = detached.DocumentElement;
+
+        if ( signatureElement == null )
+            return false;
+
+        var signedXml = new SignedXml( document );
+        signedXml.LoadXml( signatureElement );
+
+        return signedXml.CheckSignature();
+    }
+
+
+    /// <summary>
+    /// Verifies a detached signature against an explicit certificate.
+    /// </summary>
+    public static bool VerifyDetached( XmlDocument document, XmlDocument detached, X509Certificate2 certificate )
+    {
+        if ( document.PreserveWhitespace == false )
+            throw new InvalidOperationException( "Expected XML document to be initialized with PreserveWhitespace = true" );
+
+        var signatureElement = detached.DocumentElement;
+
+        if ( signatureElement == null )
+            return false;
+
+        var signedXml = new SignedXml( document );
+        signedXml.LoadXml( signatureElement );
+
+        return signedXml.CheckSignature( certificate, true );
+    }
+
+
     /// <summary />
     public static XmlDocument Sign(
         SignatureType signatureType,
