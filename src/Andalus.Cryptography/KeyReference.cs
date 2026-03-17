@@ -7,7 +7,7 @@
 /// For (remote) HSM, the private material never leaves the HSM boundary:
 /// only the identifier and public key are available locally.
 /// </remarks>
-public sealed class KeyReference
+public sealed class KeyReference : IEquatable<KeyReference>
 {
     /// <summary>
     /// HSM-specific key identifier (e.g. Key Vault key URI, PKCS#11 handle, ARN).
@@ -37,6 +37,13 @@ public sealed class KeyReference
     /// <summary />
     public static implicit operator KeyReference( string value )
     {
+        return KeyReference.Parse( value );
+    }
+
+
+    /// <summary />
+    public static KeyReference Parse( string value )
+    {
         var ix = value.LastIndexOf( '#' );
 
         if ( ix < 0 )
@@ -48,4 +55,55 @@ public sealed class KeyReference
             KeyType = Enum.Parse<KeyType>( value[ ( ix + 1 ).. ] ),
         };
     }
+
+
+    /// <summary />
+    public static bool TryParse( string value, out KeyReference? result )
+    {
+        var ix = value.LastIndexOf( '#' );
+
+        if ( ix < 0 )
+        {
+            result = null;
+            return false;
+        }
+
+        if ( Enum.TryParse<KeyType>( value[ ( ix + 1 ).. ], out var keyType ) == false )
+        {
+            result = null;
+            return false;
+        }
+
+        result = new KeyReference()
+        {
+            KeyId = value[ ..ix ],
+            KeyType = keyType
+        };
+
+        return true;
+    }
+
+
+    /// <inheritdoc />
+    public bool Equals( KeyReference? other )
+    {
+        if ( other is null )
+            return false;
+
+        return KeyId == other.KeyId && KeyType == other.KeyType;
+    }
+
+    /// <inheritdoc />
+    public override bool Equals( object? obj ) => Equals( obj as KeyReference );
+
+    /// <inheritdoc />
+    public override int GetHashCode() => HashCode.Combine( KeyId, KeyType );
+
+    /// <summary />
+    public static bool operator ==( KeyReference? left, KeyReference? right )
+        => ReferenceEquals( left, right ) || ( left is not null && left.Equals( right ) );
+
+    /// <summary />
+    public static bool operator !=( KeyReference? left, KeyReference? right )
+        => !( left == right );
 }
