@@ -56,7 +56,7 @@ public class KeyVaultCryptoProvider : ICryptoProvider
         var family = key.KeyType.Family();
         var kid = new KeyVaultKeyIdentifier( new Uri( key.KeyId ) );
 
-        var kv = await _kc.GetKeyAsync( kid.Name, kid.Version );
+        var kv = await _kc.GetKeyAsync( kid.Name, kid.Version, cancellationToken );
 
         if ( family == KeyFamily.Ecdsa )
         {
@@ -72,9 +72,47 @@ public class KeyVaultCryptoProvider : ICryptoProvider
 
 
     /// <inheritdoc />
-    public Task<KeyReference> ImportKeyPairAsync( KeyCreationOptions options, KeyPair keyPair, CancellationToken cancellationToken = default )
+    public async Task<KeyReference> ImportKeyPairAsync( KeyCreationOptions options, KeyPair keyPair, CancellationToken cancellationToken = default )
     {
-        throw new NotImplementedException();
+        var family = options.KeyType.Family();
+        JsonWebKey jwk;
+
+        if ( family == KeyFamily.Ecdsa )
+        {
+            using var ecdsa = ECDsa.Create();
+            ecdsa.ImportPkcs8PrivateKey( keyPair.GetPrivateKeyBytes(), out _ );
+
+            jwk = new JsonWebKey( ecdsa, includePrivateParameters: true );
+        }
+        else
+        {
+            using var rsa = RSA.Create();
+            rsa.ImportPkcs8PrivateKey( keyPair.GetPrivateKeyBytes(), out _ );
+
+            jwk = new JsonWebKey( rsa, includePrivateParameters: true );
+        }
+
+
+        /*
+         * 
+         */
+        var importOptions = new ImportKeyOptions( options.KeyName, jwk )
+        {
+            HardwareProtected = options.HardwareProtected,
+        };
+
+        importOptions.Properties.Enabled = true;
+        importOptions.Properties.ExpiresOn = options.MomentExpiry;
+        importOptions.Properties.Exportable = options.Exportable;
+        ApplyMetadata( importOptions.Properties.Tags, options.Tags );
+
+        var key = await _kc.ImportKeyAsync( importOptions, cancellationToken );
+
+        return new KeyReference()
+        {
+            KeyId = key.Value.Id.ToString(),
+            KeyType = options.KeyType,
+        };
     }
 
 
@@ -101,6 +139,7 @@ public class KeyVaultCryptoProvider : ICryptoProvider
     {
         var family = key.KeyType.Family();
         var bytes = hash.ToArray();
+        var sigAlgo = ToSignatureAlgorithm( key.KeyType, hashAlgorithm );
 
 
         /*
@@ -108,7 +147,7 @@ public class KeyVaultCryptoProvider : ICryptoProvider
          */
         var kid = new KeyVaultKeyIdentifier( new Uri( key.KeyId ) );
         var client = _kc.GetCryptographyClient( kid.Name, kid.Version );
-        var result = await client.SignAsync( SignatureAlgorithm.ES256K, bytes, cancellationToken );
+        var result = await client.SignAsync( sigAlgo, bytes, cancellationToken );
 
 
         /*
@@ -140,6 +179,7 @@ public class KeyVaultCryptoProvider : ICryptoProvider
         var family = key.KeyType.Family();
         var hashBytes = hash.ToArray();
         var signBytes = signature.ToArray();
+        var sigAlgo = ToSignatureAlgorithm( key.KeyType, hashAlgorithm );
 
         if ( family == KeyFamily.Ecdsa )
             signBytes = SignatureFormat.ConvertDerToIeeeP1363( signBytes, key.KeyType.CurveOrder() );
@@ -150,7 +190,7 @@ public class KeyVaultCryptoProvider : ICryptoProvider
          */
         var kid = new KeyVaultKeyIdentifier( new Uri( key.KeyId ) );
         var client = _kc.GetCryptographyClient( kid.Name, kid.Version );
-        var result = await client.VerifyAsync( SignatureAlgorithm.ES256K, hashBytes, signBytes, cancellationToken );
+        var result = await client.VerifyAsync( sigAlgo, hashBytes, signBytes, cancellationToken );
 
         return result.IsValid;
     }
@@ -162,7 +202,7 @@ public class KeyVaultCryptoProvider : ICryptoProvider
         KeyCurveName curve,
         CancellationToken cancellationToken )
     {
-        var ecOptions = new CreateEcKeyOptions( options.KeyName, hardwareProtected: true )
+        var ecOptions = new CreateEcKeyOptions( options.KeyName, hardwareProtected: options.HardwareProtected )
         {
             CurveName = curve,
             Enabled = true,
@@ -170,7 +210,7 @@ public class KeyVaultCryptoProvider : ICryptoProvider
             Exportable = options.Exportable,
         };
 
-        ApplyMetadata( ecOptions, options.Tags );
+        ApplyMetadata( ecOptions.Tags, options.Tags );
 
         return await _kc.CreateEcKeyAsync( ecOptions, cancellationToken );
     }
@@ -182,7 +222,7 @@ public class KeyVaultCryptoProvider : ICryptoProvider
         int keySize,
         CancellationToken cancellationToken )
     {
-        var rsaOptions = new CreateRsaKeyOptions( options.KeyName, hardwareProtected: true )
+        var rsaOptions = new CreateRsaKeyOptions( options.KeyName, hardwareProtected: options.HardwareProtected )
         {
             KeySize = keySize,
             Enabled = true,
@@ -190,18 +230,47 @@ public class KeyVaultCryptoProvider : ICryptoProvider
             Exportable = options.Exportable,
         };
 
-        ApplyMetadata( rsaOptions, options.Tags );
+        ApplyMetadata( rsaOptions.Tags, options.Tags );
 
         return await _kc.CreateRsaKeyAsync( rsaOptions, cancellationToken );
     }
 
 
     /// <summary />
-    private static void ApplyMetadata( CreateKeyOptions keyOptions, IDictionary<string, string> metadata )
+    private static SignatureAlgorithm ToSignatureAlgorithm( KeyType keyType, HashAlgorithmName hashAlgorithm )
+    {
+        var family = keyType.Family();
+
+        if ( family == KeyFamily.Ecdsa )
+        {
+            return keyType switch
+            {
+                KeyType.EcdsaP256 => SignatureAlgorithm.ES256,
+                KeyType.EcdsaP384 => SignatureAlgorithm.ES384,
+                KeyType.EcdsaP521 => SignatureAlgorithm.ES512,
+                KeyType.EcdsaSecp256k1 => SignatureAlgorithm.ES256K,
+                _ => throw new NotSupportedException( $"Key type '{keyType}' is not supported." ),
+            };
+        }
+        else
+        {
+            return hashAlgorithm.Name switch
+            {
+                "SHA256" => SignatureAlgorithm.RS256,
+                "SHA384" => SignatureAlgorithm.RS384,
+                "SHA512" => SignatureAlgorithm.RS512,
+                _ => throw new NotSupportedException( $"Hash algorithm '{hashAlgorithm.Name}' is not supported." ),
+            };
+        }
+    }
+
+
+    /// <summary />
+    private static void ApplyMetadata( IDictionary<string, string> into, IDictionary<string, string> metadata )
     {
         foreach ( var (key, value) in metadata )
         {
-            keyOptions.Tags[ key ] = value;
+            into[ key ] = value;
         }
     }
 }

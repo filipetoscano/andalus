@@ -13,6 +13,9 @@ public sealed class KeyCreationOptions
     /// </summary>
     public required string KeyName { get; init; }
 
+    /// <summary />
+    public bool HardwareProtected { get; set; }
+
     /// <summary>
     /// Whether the private key can be exported. Most production
     /// HSMs should set this to false.
