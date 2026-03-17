@@ -19,6 +19,7 @@
     <Project Path="src/Andalus.Cryptography/Andalus.Cryptography.csproj" Id="41eb5df4-dc54-417d-99f0-d853f25a2429" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Andalus.Cryptography.KeyVault.Tests/Andalus.Cryptography.KeyVault.Tests.csproj" Id="3af7d064-30d4-41cb-8531-01c7a73b84a2" />
     <Project Path="tests/Andalus.Cryptography.Tests/Andalus.Cryptography.Tests.csproj" Id="7d9c1434-91fd-42a0-b72e-b8772bd9a6b7" />
     <Project Path="tests/Andalus.Cryptography.Xml.Tests/Andalus.Cryptography.Xml.Tests.csproj" />
   </Folder>
