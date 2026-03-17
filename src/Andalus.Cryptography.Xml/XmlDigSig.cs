@@ -26,7 +26,7 @@ public class XmlDigSig
         if ( document.PreserveWhitespace == false )
             throw new InvalidOperationException( "Expected XML document to be initialized with PreserveWhitespace = true" );
 
-        var signatureNodes = document.SelectNodes( "//ds:Signature", Ns.Manager );
+        var signatureNodes = document.SelectNodes( " //ds:Signature ", Ns.Manager );
 
         if ( signatureNodes == null || signatureNodes.Count == 0 )
             return false;
@@ -104,6 +104,9 @@ public class XmlDigSig
         if ( document.PreserveWhitespace == false )
             throw new InvalidOperationException( "Expected XML document to be initialized with PreserveWhitespace = true" );
 
+        var enveloped = options?.EnvelopedSignaturePlacement ?? new FirstChildPlacement();
+        enveloped.EnsureLocation( document );
+
         var signedXml = new SignedXml( document );
 
         var docRef = new Reference( "" );
@@ -113,7 +116,9 @@ public class XmlDigSig
         signedXml.AddReference( docRef );
 
         var xmlSig = ComputeSignature( signedXml, provider, key, hashAlgorithm, options );
-        document.DocumentElement!.AppendChild( document.ImportNode( xmlSig, true ) );
+        var docSig = (XmlElement) document.ImportNode( xmlSig, true );
+
+        enveloped.PlaceSignature( document, docSig );
 
         return document;
     }

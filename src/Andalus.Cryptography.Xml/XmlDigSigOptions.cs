@@ -10,4 +10,7 @@ public class XmlDigSigOptions
 
     /// <summary />
     public KeyInfoPart AddKeyInfo { get; set; }
+
+    /// <summary />
+    public IEnvelopedSignaturePlacement? EnvelopedSignaturePlacement { get; set; }
 }

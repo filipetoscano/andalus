@@ -47,6 +47,10 @@ public class XmlSignCommand
     [Option( "-o|--output", CommandOptionType.SingleValue, Description = "Output filename" )]
     public string? OutputPath { get; set; }
 
+    /// <summary />
+    [Option( "-e|--enveloped", CommandOptionType.SingleValue, Description = "Enveloped signature placement" )]
+    public string? EnvelopedPlacement { get; set; }
+
 
     /// <summary />
     public int OnExecute()
@@ -61,10 +65,27 @@ public class XmlSignCommand
         /*
          * 
          */
+        IEnvelopedSignaturePlacement? enveloped = null;
+
+        if ( this.EnvelopedPlacement != null )
+        {
+            enveloped = this.EnvelopedPlacement switch
+            {
+                "first" => new FirstChildPlacement(),
+                "last" => new LastChildPlacement(),
+                _ => throw new InvalidOperationException(),
+            };
+        }
+
+
+        /*
+         * 
+         */
         var signed = XmlDigSig.Sign( this.SignatureType, doc, _crypto, this.KeyReference!, HashAlgorithmName.SHA256, new XmlDigSigOptions()
         {
             AddKeyInfo = KeyInfoPart.Certificate | KeyInfoPart.IssuerSerial,
             Certificate = x509,
+            EnvelopedSignaturePlacement = enveloped,
         } );
 
 
