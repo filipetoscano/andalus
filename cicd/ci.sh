@@ -27,6 +27,6 @@ cd ..
 dotnet clean   -c Release
 dotnet restore --packages .nuget
 dotnet build   -c Release --no-restore
-dotnet test
+dotnet test --collect:"XPlat Code Coverage" --logger "junit;LogFilePath=test-results.xml" --results-directory ./TestResults
 
 # eof
