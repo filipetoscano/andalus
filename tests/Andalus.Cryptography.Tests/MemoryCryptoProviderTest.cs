@@ -3,7 +3,7 @@
 namespace Andalus.Cryptography.Tests;
 
 /// <summary />
-public class FileCryptoProviderTest
+public class MemoryCryptoProviderTest
 {
     /// <summary />
     [Theory]
@@ -16,16 +16,10 @@ public class FileCryptoProviderTest
     [InlineData( KeyType.Rsa4096 )]
     public async Task Roundtrip( KeyType keyType )
     {
-        var ks = new FilesystemKeyStore( new FilesystemKeyStoreOptions()
-        {
-            RootDirectory = Path.Combine( Environment.CurrentDirectory, "tests" ),
-        } );
-
+        var ks = new MemoryKeyStore();
         var p = new KeyStoreCryptoProvider( ks );
 
-        var keyRef = await p.CreateKeyPairAsync( new
-
-            KeyCreationOptions()
+        var keyRef = await p.CreateKeyPairAsync( new KeyCreationOptions()
         {
             KeyName = nameof( Roundtrip ) + "-" + keyType.ToString(),
             KeyType = keyType,
