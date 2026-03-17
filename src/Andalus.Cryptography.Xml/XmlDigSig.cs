@@ -11,9 +11,7 @@ public class XmlDigSig
     /// <summary />
     static XmlDigSig()
     {
-        CryptoConfig.AddAlgorithm( typeof( EcdsaSha256SignatureDescription ), "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256" );
-        CryptoConfig.AddAlgorithm( typeof( EcdsaSha384SignatureDescription ), "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha384" );
-        CryptoConfig.AddAlgorithm( typeof( EcdsaSha512SignatureDescription ), "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha512" );
+        CryptoConfigConfiguration.Register();
     }
 
 

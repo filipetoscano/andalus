@@ -4,6 +4,31 @@ namespace Andalus.Cryptography.Xml;
 
 
 /// <summary />
+public static class CryptoConfigConfiguration
+{
+    private static Lazy<bool> _registration = new Lazy<bool>( AddAlgorithms );
+
+
+    /// <summary />
+    public static void Register()
+    {
+        _ = _registration.Value;
+    }
+
+
+    /// <summary />
+    private static bool AddAlgorithms()
+    {
+        CryptoConfig.AddAlgorithm( typeof( EcdsaSha256SignatureDescription ), "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256" );
+        CryptoConfig.AddAlgorithm( typeof( EcdsaSha384SignatureDescription ), "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha384" );
+        CryptoConfig.AddAlgorithm( typeof( EcdsaSha512SignatureDescription ), "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha512" );
+
+        return true;
+    }
+}
+
+
+/// <summary />
 public sealed class EcdsaSha256SignatureDescription : SignatureDescription
 {
     /// <summary />
