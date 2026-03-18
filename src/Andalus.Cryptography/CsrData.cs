@@ -1,4 +1,6 @@
-﻿namespace Andalus.Cryptography;
+﻿using Org.BouncyCastle.Asn1;
+
+namespace Andalus.Cryptography;
 
 /// <summary />
 public class CsrData
@@ -43,7 +45,13 @@ public class CsrData
     /// </summary>
     public string? Country { get; set; }
 
+    /// <summary>
+    /// Additional custom subject key info key/values, where the
+    /// key is an OID.
+    /// </summary>
+    public Dictionary<string, string>? Additional { get; set; }
+
 
     /// <summary />
-    public Dictionary<string, string>? Additional { get; set; }
+    public DerSet? Attributes { get; set; }
 }

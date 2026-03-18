@@ -11,28 +11,31 @@ namespace Andalus.Cryptography;
 public class CsrSigner
 {
     /// <summary />
-    public async Task<Pkcs10CertificationRequest> CreateAsync( ICryptoProvider provider, KeyReference key, CsrData data )
+    public async Task<Pkcs10CertificationRequest> CreateAsync(
+        ICryptoProvider provider, KeyReference key,
+        CsrData data,
+        CancellationToken cancellationToken = default )
     {
         var subject = BuildSubject( data );
         var signatureAlgorithm = MapSignatureAlgorithm( key.KeyType );
         var hashAlgorithm = MapHashAlgorithm( key.KeyType );
 
         // Retrieve the public key from the HSM
-        var publicKeyBytes = await provider.GetPublicKeyAsync( key );
+        var publicKeyBytes = await provider.GetPublicKeyAsync( key, cancellationToken );
         var publicKeyInfo = SubjectPublicKeyInfo.GetInstance( publicKeyBytes );
 
         // Build the TBS (to-be-signed) CertificationRequestInfo
         var requestInfo = new CertificationRequestInfo(
             subject,
             publicKeyInfo,
-            null );
+            data.Attributes );
 
         // Hash the TBS locally
         var tbsBytes = requestInfo.GetDerEncoded();
         var hash = HashData( tbsBytes, hashAlgorithm );
 
-        // Sign via the HSM
-        var signResult = await provider.SignHashAsync( key, hash, hashAlgorithm );
+        // Sign via the HSM (abstraction always returns DER signature)
+        var signResult = await provider.SignHashAsync( key, hash, hashAlgorithm, cancellationToken );
 
         // Assemble the final PKCS#10 structure
         var csrSequence = new DerSequence(
@@ -50,34 +53,31 @@ public class CsrSigner
         var oids = new List<DerObjectIdentifier>();
         var vals = new List<string>();
 
-        if ( data.Additional != null )
-        {
-            foreach ( var kv in data.Additional )
-            {
-                oids.Add( new DerObjectIdentifier( kv.Key ) );
-                vals.Add( kv.Value );
-            }
-        }
 
-        if ( string.IsNullOrWhiteSpace( data.Country ) == false )
+        /*
+         * Note: RFC 5280 convention is general-to-specific ordering, and which
+         * is expected by most Certificate Authorities, such as: C > L > O > OU > CN
+         */
+
+        if ( string.IsNullOrEmpty( data.Country ) == false )
         {
             oids.Add( X509Name.C );
             vals.Add( data.Country );
         }
 
-        if ( string.IsNullOrWhiteSpace( data.Locality ) == false )
+        if ( string.IsNullOrEmpty( data.Locality ) == false )
         {
             oids.Add( X509Name.L );
             vals.Add( data.Locality );
         }
 
-        if ( string.IsNullOrWhiteSpace( data.BusinessCategory ) == false )
+        if ( string.IsNullOrEmpty( data.BusinessCategory ) == false )
         {
             oids.Add( X509Name.BusinessCategory );
             vals.Add( data.BusinessCategory );
         }
 
-        if ( string.IsNullOrWhiteSpace( data.Organization ) == false )
+        if ( string.IsNullOrEmpty( data.Organization ) == false )
         {
             oids.Add( X509Name.O );
             vals.Add( data.Organization );
@@ -89,7 +89,7 @@ public class CsrSigner
             vals.Add( data.OrganizationIdentifier );
         }
 
-        if ( string.IsNullOrWhiteSpace( data.OrganizationalUnit ) == false )
+        if ( string.IsNullOrEmpty( data.OrganizationalUnit ) == false )
         {
             oids.Add( X509Name.OU );
             vals.Add( data.OrganizationalUnit );
@@ -104,9 +104,17 @@ public class CsrSigner
         oids.Add( X509Name.CN );
         vals.Add( data.CommonName );
 
+        if ( data.Additional != null )
+        {
+            foreach ( var kv in data.Additional )
+            {
+                oids.Add( new DerObjectIdentifier( kv.Key ) );
+                vals.Add( kv.Value );
+            }
+        }
+
         return new X509Name( oids, vals );
     }
-
 
 
     /// <summary />
@@ -117,7 +125,8 @@ public class CsrSigner
             KeyType.EcdsaP256 or KeyType.EcdsaSecp256k1 => new AlgorithmIdentifier( X9ObjectIdentifiers.ECDsaWithSha256 ),
             KeyType.EcdsaP384 => new AlgorithmIdentifier( X9ObjectIdentifiers.ECDsaWithSha384 ),
             KeyType.EcdsaP521 => new AlgorithmIdentifier( X9ObjectIdentifiers.ECDsaWithSha512 ),
-            KeyType.Rsa2048 or KeyType.Rsa3072 => new AlgorithmIdentifier( PkcsObjectIdentifiers.Sha256WithRsaEncryption, DerNull.Instance ),
+            KeyType.Rsa2048 => new AlgorithmIdentifier( PkcsObjectIdentifiers.Sha256WithRsaEncryption, DerNull.Instance ),
+            KeyType.Rsa3072 => new AlgorithmIdentifier( PkcsObjectIdentifiers.Sha384WithRsaEncryption, DerNull.Instance ),
             KeyType.Rsa4096 => new AlgorithmIdentifier( PkcsObjectIdentifiers.Sha512WithRsaEncryption, DerNull.Instance ),
 
             _ => throw new NotSupportedException( $"Key type '{keyType}' is not supported." )
@@ -134,7 +143,8 @@ public class CsrSigner
             KeyType.EcdsaP384 => HashAlgorithmName.SHA384,
             KeyType.EcdsaP521 => HashAlgorithmName.SHA512,
 
-            KeyType.Rsa2048 or KeyType.Rsa3072 => HashAlgorithmName.SHA256,
+            KeyType.Rsa2048 => HashAlgorithmName.SHA256,
+            KeyType.Rsa3072 => HashAlgorithmName.SHA384,
             KeyType.Rsa4096 => HashAlgorithmName.SHA512,
 
             _ => throw new NotSupportedException( $"Key type '{keyType}' is not supported." )
