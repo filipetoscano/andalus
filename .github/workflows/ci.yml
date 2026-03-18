@@ -32,12 +32,18 @@ jobs:
         run: ./cicd/ci.sh
 
       - name: Upload coverage report
+        if: ${{ !cancelled() }}
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./TestResults
+          files: "**/coverage.cobertura.xml"
 
       - name: Upload test results
         if: ${{ !cancelled() }}
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          report_type: test_results
+          directory: ./TestResults
+          files: "**/*.test-results.xml"
