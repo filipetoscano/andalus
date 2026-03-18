@@ -16,8 +16,7 @@ public class MemoryCryptoProviderTest
     [InlineData( KeyType.Rsa4096 )]
     public async Task Roundtrip( KeyType keyType )
     {
-        var ks = new MemoryKeyStore();
-        var p = new KeyStoreCryptoProvider( ks );
+        var p = new MemoryCryptoProvider();
 
         var keyRef = await p.CreateKeyPairAsync( new KeyCreationOptions()
         {
