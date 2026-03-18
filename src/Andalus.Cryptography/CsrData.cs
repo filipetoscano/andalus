@@ -38,7 +38,7 @@ public class CsrData
     /// <summary>
     /// (L) Locality
     /// </summary>
-    public string? Locality { get; internal set; }
+    public string? Locality { get; set; }
 
     /// <summary>
     /// (C) Country
