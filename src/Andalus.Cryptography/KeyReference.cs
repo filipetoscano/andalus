@@ -46,7 +46,7 @@ public sealed class KeyReference : IEquatable<KeyReference>
     {
         var ix = value.LastIndexOf( '#' );
 
-        if ( ix < 0 )
+        if ( ix <= 0 )
             throw new FormatException( $"Invalid key reference '{value}', expected 'KeyId#KeyType'." );
 
         return new KeyReference
@@ -62,7 +62,7 @@ public sealed class KeyReference : IEquatable<KeyReference>
     {
         var ix = value.LastIndexOf( '#' );
 
-        if ( ix < 0 )
+        if ( ix <= 0 )
         {
             result = null;
             return false;
