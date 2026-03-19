@@ -1,7 +1,6 @@
-﻿using Org.BouncyCastle.Asn1;
+﻿using Andalus.Cryptography.Internal;
+using Org.BouncyCastle.Asn1;
 using Org.BouncyCastle.Asn1.X509;
-using Org.BouncyCastle.Crypto;
-using Org.BouncyCastle.Crypto.Operators;
 using Org.BouncyCastle.Math;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.X509;
@@ -13,18 +12,31 @@ namespace Andalus.Cryptography;
 public class X509
 {
     /// <summary />
-    public static X509Certificate SelfSign( Pkcs10CertificationRequest csr, AsymmetricKeyParameter privateKey, int validityDays = 365 )
+    public static async Task<X509Certificate> SelfSignAsync(
+        Pkcs10CertificationRequest csr,
+        ICryptoProvider provider,
+        KeyReference key,
+        int validityDays = 365,
+        CancellationToken cancellationToken = default )
     {
-        // 1. Verify the CSR signature first
-        if ( !csr.Verify() )
+        /*
+         * 
+         */
+        if ( csr.Verify() == false )
             throw new InvalidOperationException( "CSR signature verification failed." );
 
-        // 2. Extract subject and public key from the CSR
+
+        /*
+         * Extract subject and public key from the CSR
+         */
         var csrInfo = csr.GetCertificationRequestInfo();
         var subjectDN = csrInfo.Subject;
         var publicKey = csr.GetPublicKey();
 
-        // 3. Build the certificate
+
+        /*
+         * Build the certificate
+         */
         var certGenerator = new X509V3CertificateGenerator();
 
         certGenerator.SetSerialNumber( BigInteger.ProbablePrime( 120, new Random() ) );
@@ -34,36 +46,47 @@ public class X509
         certGenerator.SetNotAfter( DateTime.UtcNow.AddDays( validityDays ) );
         certGenerator.SetPublicKey( publicKey );
 
-        // 4. Optional: carry over any requested extensions from the CSR
-        var extensions = csr.GetRequestedExtensions();  // may be null
+
+        /*
+         * Optional: carry over any requested extensions from the CSR
+         */
+        var extensions = csr.GetRequestedExtensions();
+
         if ( extensions != null )
         {
             foreach ( var oid in extensions.ExtensionOids )
             {
                 var ext = extensions.GetExtension( (DerObjectIdentifier) oid );
-                certGenerator.AddExtension(
-                    (DerObjectIdentifier) oid, ext.IsCritical, ext.GetParsedValue() );
+                certGenerator.AddExtension( (DerObjectIdentifier) oid, ext.IsCritical, ext.GetParsedValue() );
             }
         }
 
-        // 5. Add basic constraints (CA:true for a self-signed root)
-        certGenerator.AddExtension(
-            X509Extensions.BasicConstraints, true, new BasicConstraints( true ) );
 
-        // 6. Add Subject Key Identifier
+        /*
+         * Add basic constraints (CA:true for a self-signed root)
+         */
+        certGenerator.AddExtension( X509Extensions.BasicConstraints, true, new BasicConstraints( true ) );
+
+
+        /*
+         * Add Subject Key Identifier
+         */
         var pubKeyInfo = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo( publicKey );
         var ski = X509ExtensionUtilities.CreateSubjectKeyIdentifier( pubKeyInfo );
 
-        certGenerator.AddExtension(
-            X509Extensions.SubjectKeyIdentifier, false, ski );
+        certGenerator.AddExtension( X509Extensions.SubjectKeyIdentifier, false, ski );
 
-        // 7. Sign — pick the signature algorithm to match your key type
-        //    For ECDSA/secp256k1: "SHA256withECDSA"
-        //    For RSA:             "SHA256withRSA"
-        var signatureFactory = new Asn1SignatureFactory( "SHA256withECDSA", privateKey );
+
+        /* 
+         * Sign
+         */
+        var signatureFactory = new HsmSignatureFactory( provider, key, cancellationToken );
         var cert = certGenerator.Generate( signatureFactory );
 
-        // 8. Sanity check
+
+        /*
+         * Sanity check
+         */
         cert.Verify( publicKey );
 
         return cert;

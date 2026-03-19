@@ -20,7 +20,7 @@ public class CsrSignerTests
     [InlineData( KeyType.Rsa4096 )]
     public async Task CreateWithMinimalData( KeyType keyType )
     {
-        var csr = await CreateCsr( keyType, new CsrData()
+        var (p, kr, csr) = await CreateCsr( keyType, new CsrData()
         {
             CommonName = "Common Name",
         } );
@@ -63,7 +63,7 @@ public class CsrSignerTests
             }
         };
 
-        var csr = await CreateCsr( keyType, data );
+        var (p, kr, csr) = await CreateCsr( keyType, data );
 
         var subject = csr.GetCertificationRequestInfo().Subject.ToString();
 
@@ -76,7 +76,29 @@ public class CsrSignerTests
 
 
     /// <summary />
-    private async Task<Pkcs10CertificationRequest> CreateCsr( KeyType keyType, CsrData data )
+    [Theory]
+    [InlineData( KeyType.EcdsaSecp256k1 )]
+    [InlineData( KeyType.EcdsaP256 )]
+    [InlineData( KeyType.EcdsaP384 )]
+    [InlineData( KeyType.EcdsaP521 )]
+    [InlineData( KeyType.Rsa2048 )]
+    [InlineData( KeyType.Rsa3072 )]
+    [InlineData( KeyType.Rsa4096 )]
+    public async Task SelfSign( KeyType keyType )
+    {
+        var (p, kr, csr) = await CreateCsr( keyType, new CsrData()
+        {
+            CommonName = "Common Name",
+        } );
+
+        var x = await X509.SelfSignAsync( csr, p, kr, 365 );
+    }
+
+
+    /// <summary />
+    private async Task<(ICryptoProvider CryptoProvider,
+        KeyReference KeyRef,
+        Pkcs10CertificationRequest CSR)> CreateCsr( KeyType keyType, CsrData data )
     {
         var p = new MemoryCryptoProvider();
         var keyRef = await p.CreateKeyPairAsync( new KeyCreationOptions()
@@ -125,6 +147,6 @@ public class CsrSignerTests
         Assert.NotNull( csr );
         Assert.True( csr.Verify() );
 
-        return csr;
+        return (p, keyRef, csr);
     }
 }
