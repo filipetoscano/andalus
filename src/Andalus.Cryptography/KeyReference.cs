@@ -15,7 +15,7 @@ public sealed class KeyReference : IEquatable<KeyReference>
     public required string KeyId { get; init; }
 
     /// <summary>
-    /// The algorithm family this key belongs to.
+    /// The algorithm family/spec this key belongs to.
     /// </summary>
     public required KeyType KeyType { get; init; }
 

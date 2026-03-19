@@ -18,18 +18,7 @@ public class KeyStoreCryptoProvider : ICryptoProvider
     /// <inheritdoc />
     public Task<KeyReference> CreateKeyPairAsync( KeyCreationOptions options, CancellationToken cancellationToken = default )
     {
-        KeyPair kp = options.KeyType switch
-        {
-            KeyType.EcdsaSecp256k1 => CreateEcKey( ECCurve.CreateFromValue( "1.3.132.0.10" ) ),
-            KeyType.EcdsaP256 => CreateEcKey( ECCurve.NamedCurves.nistP256 ),
-            KeyType.EcdsaP384 => CreateEcKey( ECCurve.NamedCurves.nistP384 ),
-            KeyType.EcdsaP521 => CreateEcKey( ECCurve.NamedCurves.nistP521 ),
-
-            KeyType.Rsa2048 => CreateRsaKey( 2048 ),
-            KeyType.Rsa3072 => CreateRsaKey( 3072 ),
-            KeyType.Rsa4096 => CreateRsaKey( 4096 ),
-            _ => throw new NotSupportedException()
-        };
+        KeyPair kp = KeyPair.CreateKey( options.KeyType );
 
         return ImportKeyPairAsync( options, kp, cancellationToken );
     }
@@ -158,37 +147,5 @@ public class KeyStoreCryptoProvider : ICryptoProvider
                 signature.ToArray(),
                 DSASignatureFormat.Rfc3279DerSequence );
         }
-    }
-
-
-    /// <summary />
-    private static KeyPair CreateEcKey( ECCurve curve )
-    {
-        using var ecdsa = ECDsa.Create( curve );
-
-        var privatePem = ecdsa.ExportECPrivateKeyPem();
-        var publicPem = ecdsa.ExportSubjectPublicKeyInfoPem();
-
-        return new KeyPair()
-        {
-            PrivatePem = privatePem,
-            PublicPem = publicPem,
-        };
-    }
-
-
-    /// <summary />
-    private static KeyPair CreateRsaKey( int keySizeBits )
-    {
-        using var rsa = RSA.Create( keySizeBits );
-
-        var privatePem = rsa.ExportRSAPrivateKeyPem();
-        var publicPem = rsa.ExportSubjectPublicKeyInfoPem();
-
-        return new KeyPair()
-        {
-            PrivatePem = privatePem,
-            PublicPem = publicPem,
-        };
     }
 }
