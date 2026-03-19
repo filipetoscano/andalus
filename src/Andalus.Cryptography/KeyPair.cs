@@ -9,6 +9,11 @@ namespace Andalus.Cryptography;
 public class KeyPair
 {
     /// <summary>
+    /// Type of key.
+    /// </summary>
+    public required KeyType KeyType { get; set; }
+
+    /// <summary>
     /// Public material, in PEM format.
     /// </summary>
     public required string PublicPem { get; init; }
@@ -41,7 +46,7 @@ public class KeyPair
     /// <summary />
     public static KeyPair CreateKey( KeyType keyType )
     {
-        return keyType switch
+        var pem = keyType switch
         {
             KeyType.EcdsaSecp256k1 => CreateEcKey( ECCurve.CreateFromValue( "1.3.132.0.10" ) ),
             KeyType.EcdsaP256 => CreateEcKey( ECCurve.NamedCurves.nistP256 ),
@@ -53,11 +58,18 @@ public class KeyPair
             KeyType.Rsa4096 => CreateRsaKey( 4096 ),
             _ => throw new NotSupportedException()
         };
+
+        return new KeyPair()
+        {
+            KeyType = keyType,
+            PrivatePem = pem.Private,
+            PublicPem = pem.Public,
+        };
     }
 
 
     /// <summary />
-    public static KeyPair From( KeyType keyType, byte[] publicKey, byte[] privateKey )
+    public static KeyPair FromDerBytes( KeyType keyType, byte[] publicKey, byte[] privateKey )
     {
         var family = keyType.Family();
         var type = family switch
@@ -72,6 +84,7 @@ public class KeyPair
 
         return new KeyPair()
         {
+            KeyType = keyType,
             PublicPem = p,
             PrivatePem = q,
         };
@@ -99,33 +112,25 @@ public class KeyPair
 
 
     /// <summary />
-    public static KeyPair CreateEcKey( ECCurve curve )
+    private static (string Public, string Private) CreateEcKey( ECCurve curve )
     {
         using var ecdsa = ECDsa.Create( curve );
 
         var privatePem = ecdsa.ExportECPrivateKeyPem();
         var publicPem = ecdsa.ExportSubjectPublicKeyInfoPem();
 
-        return new KeyPair()
-        {
-            PrivatePem = privatePem,
-            PublicPem = publicPem,
-        };
+        return (publicPem, privatePem);
     }
 
 
     /// <summary />
-    public static KeyPair CreateRsaKey( int keySizeBits )
+    private static (string Public, string Private) CreateRsaKey( int keySizeBits )
     {
         using var rsa = RSA.Create( keySizeBits );
 
         var privatePem = rsa.ExportRSAPrivateKeyPem();
         var publicPem = rsa.ExportSubjectPublicKeyInfoPem();
 
-        return new KeyPair()
-        {
-            PrivatePem = privatePem,
-            PublicPem = publicPem,
-        };
+        return (publicPem, privatePem);
     }
 }

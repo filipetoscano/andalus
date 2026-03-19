@@ -39,7 +39,7 @@ public class KeyPairTest
     public void CreateFromBytes( KeyType keyType )
     {
         var expected = KeyPair.CreateKey( keyType );
-        var actual = KeyPair.From( keyType, expected.GetPublicKeyBytes(), expected.GetPrivateKeyBytes() );
+        var actual = KeyPair.FromDerBytes( keyType, expected.GetPublicKeyBytes(), expected.GetPrivateKeyBytes() );
 
         Assert.Equal( expected.PublicPem, actual.PublicPem );
         Assert.Equal( expected.PrivatePem, actual.PrivatePem );
