@@ -1,6 +1,6 @@
 ﻿using System.Security.Cryptography;
 
-namespace Andalus.Cryptography.Xml;
+namespace Andalus.Cryptography.Xml.Internals;
 
 /// <summary>
 /// ECDsa proxy that delegates signing to the crypto provider.
@@ -8,7 +8,7 @@ namespace Andalus.Cryptography.Xml;
 /// <remarks>
 /// SignedXml expects ECDSA signatures in IEEE P1363 format.
 /// </remarks>
-public sealed class HsmEcdsa : ECDsa
+internal sealed class HsmEcdsa : ECDsa
 {
     private readonly ICryptoProvider _provider;
     private readonly KeyReference _key;
@@ -64,19 +64,12 @@ public sealed class HsmEcdsa : ECDsa
 
 
     /// <inheritdoc />
+    /// <remarks>
+    /// SignedXml will calcualte the digest internally, and then call the
+    /// SignHash method directly. Remove this code.
+    /// </remarks>
     protected override byte[] HashData( Stream data, HashAlgorithmName hashAlgorithm )
-    {
-        if ( _hashAlgorithm != hashAlgorithm )
-            throw new InvalidOperationException( $"Hash algorithm mismatch: expected '{_hashAlgorithm.Name}', called with '{hashAlgorithm.Name}'" );
-
-        return hashAlgorithm.Name switch
-        {
-            "SHA256" => SHA256.HashData( data ),
-            "SHA384" => SHA384.HashData( data ),
-            "SHA512" => SHA512.HashData( data ),
-            _ => throw new NotSupportedException()
-        };
-    }
+        => throw new NotSupportedException();
 
 
     /// <inheritdoc />

@@ -1,6 +1,6 @@
 ﻿using System.Security.Cryptography;
 
-namespace Andalus.Cryptography.Xml;
+namespace Andalus.Cryptography.Xml.Internals;
 
 /// <summary>
 /// RSA proxy that delegates signing to the crypto provider.
@@ -8,7 +8,7 @@ namespace Andalus.Cryptography.Xml;
 /// <remarks>
 /// SignedXml expects RSA signatures in PKCS#1 v1.5 format.
 /// </remarks>
-public sealed class HsmRsa : RSA
+internal sealed class HsmRsa : RSA
 {
     private readonly ICryptoProvider _provider;
     private readonly KeyReference _key;
@@ -53,16 +53,12 @@ public sealed class HsmRsa : RSA
 
 
     /// <inheritdoc />
+    /// <remarks>
+    /// SignedXml will calcualte the digest internally, and then call the
+    /// SignHash method directly. Remove this code.
+    /// </remarks>
     protected override byte[] HashData( Stream data, HashAlgorithmName hashAlgorithm )
-    {
-        return hashAlgorithm.Name switch
-        {
-            "SHA256" => SHA256.HashData( data ),
-            "SHA384" => SHA384.HashData( data ),
-            "SHA512" => SHA512.HashData( data ),
-            _ => throw new NotSupportedException()
-        };
-    }
+        => throw new NotSupportedException();
 
 
     /// <inheritdoc />
