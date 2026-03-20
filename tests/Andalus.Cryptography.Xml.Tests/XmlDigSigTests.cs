@@ -1,5 +1,4 @@
-﻿using Andalus.Cryptography.Xml.Algorithms;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Xml;
 using System.Xml;
@@ -52,7 +51,7 @@ public class XmlDigSigTests : IClassFixture<Fixture>
         var signed = XmlDigSig.Sign( SignatureType.Enveloped, doc, _cp, b.KeyReference, han, new XmlDigSigOptions()
         {
             Certificate = b.Certificate,
-            AddKeyInfo = KeyInfoPart.Certificate,
+            AddKeyInfo = KeyInfoPart.Certificate | KeyInfoPart.SubjectName,
         } );
 
 
@@ -63,6 +62,109 @@ public class XmlDigSigTests : IClassFixture<Fixture>
 
         Assert.True( isValid );
     }
+
+
+    /// <summary />
+    [Theory]
+    [InlineData( KeyType.EcdsaSecp256k1, "SHA256" )]
+    [InlineData( KeyType.EcdsaP256, "SHA256" )]
+    [InlineData( KeyType.EcdsaP384, "SHA384" )]
+    [InlineData( KeyType.EcdsaP521, "SHA512" )]
+    [InlineData( KeyType.Rsa2048, "SHA256" )]
+    [InlineData( KeyType.Rsa3072, "SHA384" )]
+    [InlineData( KeyType.Rsa4096, "SHA512" )]
+    public void EnvelopedOk_WithoutCertificate( KeyType keyType, string hashAlgorithm )
+    {
+        var han = new HashAlgorithmName( hashAlgorithm );
+
+        var doc = new XmlDocument() { PreserveWhitespace = true };
+        doc.LoadXml( @"<root>
+    <another />
+    <bites>
+        <the />
+        <dust />
+    </bites>
+</root>" );
+
+
+        /*
+         * 
+         */
+        var b = _f.Get( keyType );
+
+        var signed = XmlDigSig.Sign( SignatureType.Enveloped, doc, _cp, b.KeyReference, han, new XmlDigSigOptions()
+        {
+        } );
+
+
+        /*
+         * 
+         */
+        bool isValid = XmlDigSig.VerifyAll( signed, b.Certificate );
+
+        Assert.True( isValid );
+    }
+
+
+    /// <summary />
+    [Theory]
+    [InlineData( KeyType.EcdsaSecp256k1, KeyType.EcdsaP256 )]
+    public void EnvelopedOk_DoubleSignature( KeyType key1, KeyType key2 )
+    {
+        var exclude = new XPathExclusion()
+        {
+            XPath = "not(ancestor-or-self::ds:Signature)",
+            Namespaces = new()
+            {
+                { "ds", "http://www.w3.org/2000/09/xmldsig#" }
+            },
+        };
+
+
+        /*
+         * 
+         */
+        var doc = new XmlDocument() { PreserveWhitespace = true };
+        doc.LoadXml( @"<root>
+    <another />
+    <bites>
+        <the />
+        <dust />
+    </bites>
+</root>" );
+
+
+        /*
+         * 
+         */
+        var b1 = _f.Get( key1 );
+        var b2 = _f.Get( key2 );
+
+        var first = XmlDigSig.Sign( SignatureType.Enveloped, doc, _cp, b1.KeyReference, HashAlgorithmName.SHA256, new XmlDigSigOptions()
+        {
+            EnvelopedSignaturePlacement = new LastChildPlacement(),
+            Certificate = b1.Certificate,
+            AddKeyInfo = KeyInfoPart.Certificate,
+            ReferenceTransforms = [ exclude.ToTransform() ],
+        } );
+
+        var second = XmlDigSig.Sign( SignatureType.Enveloped, first, _cp, b2.KeyReference, HashAlgorithmName.SHA256, new XmlDigSigOptions()
+        {
+            EnvelopedSignaturePlacement = new LastChildPlacement(),
+            Certificate = b2.Certificate,
+            AddKeyInfo = KeyInfoPart.Certificate,
+            ReferenceTransforms = [ exclude.ToTransform() ],
+        } );
+
+
+        /*
+         * 
+         */
+        bool isValid = XmlDigSig.VerifyAll( second );
+
+        Assert.True( isValid );
+    }
+
 
 
     /// <summary />
@@ -94,7 +196,7 @@ public class XmlDigSigTests : IClassFixture<Fixture>
         var signed = XmlDigSig.Sign( SignatureType.Enveloping, doc, _cp, b.KeyReference, HashAlgorithmName.SHA256, new XmlDigSigOptions()
         {
             Certificate = b.Certificate,
-            AddKeyInfo = KeyInfoPart.Certificate,
+            AddKeyInfo = KeyInfoPart.Certificate | KeyInfoPart.Issuer,
         } );
 
 
@@ -102,6 +204,91 @@ public class XmlDigSigTests : IClassFixture<Fixture>
          * 
          */
         bool isValid = XmlDigSig.VerifyAll( signed );
+
+        Assert.True( isValid );
+    }
+
+
+    /// <summary />
+    [Theory]
+    [InlineData( KeyType.EcdsaSecp256k1, KeyType.EcdsaP256 )]
+    public void EnvelopingOk_DoubleSignature( KeyType key1, KeyType key2 )
+    {
+        var doc = new XmlDocument() { PreserveWhitespace = true };
+        doc.LoadXml( @"<root>
+    <another />
+    <bites>
+        <the />
+        <dust />
+    </bites>
+</root>" );
+
+
+        /*
+         * 
+         */
+        var b1 = _f.Get( key1 );
+        var b2 = _f.Get( key2 );
+
+        var first = XmlDigSig.Sign( SignatureType.Enveloping, doc, _cp, b1.KeyReference, HashAlgorithmName.SHA256, new XmlDigSigOptions()
+        {
+            Certificate = b1.Certificate,
+            AddKeyInfo = KeyInfoPart.Certificate,
+        } );
+
+        var second = XmlDigSig.Sign( SignatureType.Enveloping, first, _cp, b2.KeyReference, HashAlgorithmName.SHA256, new XmlDigSigOptions()
+        {
+            Certificate = b2.Certificate,
+            AddKeyInfo = KeyInfoPart.Certificate,
+        } );
+
+
+        /*
+         * 
+         */
+        bool isValid = XmlDigSig.VerifyAll( second );
+
+        Assert.True( isValid );
+    }
+
+
+    /// <summary />
+    [Theory]
+    [InlineData( KeyType.EcdsaSecp256k1 )]
+    [InlineData( KeyType.EcdsaP256 )]
+    [InlineData( KeyType.EcdsaP384 )]
+    [InlineData( KeyType.EcdsaP521 )]
+    [InlineData( KeyType.Rsa2048 )]
+    [InlineData( KeyType.Rsa3072 )]
+    [InlineData( KeyType.Rsa4096 )]
+    public void DetachedOk( KeyType keyType )
+    {
+        var doc = new XmlDocument() { PreserveWhitespace = true };
+        doc.LoadXml( @"<root>
+    <another />
+    <bites>
+        <the />
+        <dust />
+    </bites>
+</root>" );
+
+
+        /*
+         * 
+         */
+        var b = _f.Get( keyType );
+
+        var signature = XmlDigSig.Sign( SignatureType.Detached, doc, _cp, b.KeyReference, HashAlgorithmName.SHA256, new XmlDigSigOptions()
+        {
+            Certificate = b.Certificate,
+            AddKeyInfo = KeyInfoPart.Certificate | KeyInfoPart.SubjectName,
+        } );
+
+
+        /*
+         * 
+         */
+        bool isValid = XmlDigSig.VerifyDetached( doc, signature );
 
         Assert.True( isValid );
     }
@@ -178,48 +365,6 @@ public class XmlDigSigTests : IClassFixture<Fixture>
 
     /// <summary />
     [Theory]
-    [InlineData( KeyType.EcdsaSecp256k1 )]
-    [InlineData( KeyType.EcdsaP256 )]
-    [InlineData( KeyType.EcdsaP384 )]
-    [InlineData( KeyType.EcdsaP521 )]
-    [InlineData( KeyType.Rsa2048 )]
-    [InlineData( KeyType.Rsa3072 )]
-    [InlineData( KeyType.Rsa4096 )]
-    public void DetachedOk( KeyType keyType )
-    {
-        var doc = new XmlDocument() { PreserveWhitespace = true };
-        doc.LoadXml( @"<root>
-    <another />
-    <bites>
-        <the />
-        <dust />
-    </bites>
-</root>" );
-
-
-        /*
-         * 
-         */
-        var b = _f.Get( keyType );
-
-        var signature = XmlDigSig.Sign( SignatureType.Detached, doc, _cp, b.KeyReference, HashAlgorithmName.SHA256, new XmlDigSigOptions()
-        {
-            Certificate = b.Certificate,
-            AddKeyInfo = KeyInfoPart.Certificate,
-        } );
-
-
-        /*
-         * 
-         */
-        bool isValid = XmlDigSig.VerifyDetached( doc, signature );
-
-        Assert.True( isValid );
-    }
-
-
-    /// <summary />
-    [Theory]
     [InlineData( SignatureType.Enveloped )]
     [InlineData( SignatureType.Enveloping )]
     public void ExcludeOk( SignatureType signatureType )
@@ -227,11 +372,10 @@ public class XmlDigSigTests : IClassFixture<Fixture>
         /*
          * 
          */
-        var aux = new XmlDocument() { PreserveWhitespace = true };
-        aux.LoadXml( @"<XPath xmlns:ds=""http://www.w3.org/2000/09/xmldsig#"">not(ancestor-or-self::extra)</XPath>" );
-
-        var excludeExtra = new XmlDsigXPathTransform();
-        excludeExtra.LoadInnerXml( aux.SelectNodes( " //* " )! );
+        var exclude = new XPathExclusion()
+        {
+            XPath = "not(ancestor-or-self::extra)",
+        };
 
 
         /*
@@ -254,7 +398,7 @@ public class XmlDigSigTests : IClassFixture<Fixture>
             AddKeyInfo = KeyInfoPart.Certificate,
             ReferenceTransforms = new List<Transform>()
             {
-                excludeExtra,
+                exclude.ToTransform(),
             },
         } );
 
@@ -262,15 +406,79 @@ public class XmlDigSigTests : IClassFixture<Fixture>
         var signedOk = XmlDigSig.VerifyAll( signed );
 
         if ( signedOk == false )
-            throw new InvalidOperationException( $"Unexpected" );
+            throw new InvalidOperationException( $"Expected fresh signature to be valid" );
+
+
+        /*
+         * Adding 'extra' under fill should not cause the signature to break,
+         * due to the exclusion added above.
+         */
+        var fillElem = doc.SelectSingleNode( " //fill " )!;
+        fillElem.AppendChild( doc.CreateElement( "extra" ) );
+        fillElem.AppendChild( doc.CreateElement( "extra" ) );
+
+        var ok2 = XmlDigSig.VerifyAll( signed );
+        Assert.True( ok2 );
+    }
+
+
+    /// <summary />
+    [Theory]
+    [InlineData( SignatureType.Enveloped )]
+    [InlineData( SignatureType.Enveloping )]
+    public void ExcludeWithNamespaceOk( SignatureType signatureType )
+    {
+        /*
+         * 
+         */
+        var exclude = new XPathExclusion()
+        {
+            XPath = "not(ancestor-or-self::xt:extra)",
+            Namespaces = new()
+            {
+                { "xt", "urn:extra" }
+            },
+        };
 
 
         /*
          * 
          */
+        var doc = new XmlDocument() { PreserveWhitespace = true };
+        doc.LoadXml( @"<root>
+    <fill />
+</root>" );
+
+
+        /*
+         * 
+         */
+        var b = _f.Get( KeyType.EcdsaSecp256k1 );
+
+        var signed = XmlDigSig.Sign( signatureType, doc, _cp, b.KeyReference, HashAlgorithmName.SHA256, new XmlDigSigOptions()
+        {
+            Certificate = b.Certificate,
+            AddKeyInfo = KeyInfoPart.Certificate,
+            ReferenceTransforms = new List<Transform>()
+            {
+                exclude.ToTransform(),
+            },
+        } );
+
+        // Failing here?
+        var signedOk = XmlDigSig.VerifyAll( signed );
+
+        if ( signedOk == false )
+            throw new InvalidOperationException( $"Expected fresh signature to be valid" );
+
+
+        /*
+         * Adding 'extra' under fill should not cause the signature to break,
+         * due to the exclusion added above.
+         */
         var fillElem = doc.SelectSingleNode( " //fill " )!;
-        fillElem.AppendChild( doc.CreateElement( "extra" ) );
-        fillElem.AppendChild( doc.CreateElement( "extra" ) );
+        fillElem.AppendChild( doc.CreateElement( "extra", "urn:extra" ) );
+        fillElem.AppendChild( doc.CreateElement( "extra", "urn:extra" ) );
 
         var ok2 = XmlDigSig.VerifyAll( signed );
         Assert.True( ok2 );
