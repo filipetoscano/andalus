@@ -232,7 +232,7 @@ public class XmlDigSig
         signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11WithCommentsTransform.AlgorithmUri );
         signedXml.SafeCanonicalizationMethods.Add( SignedXml.XmlDsigXPathTransformUrl );
 
-        const string objectId = "signed-content";
+        string objectId = "signed-" + Guid.NewGuid().ToString();
         var dataObject = new DataObject( objectId, "", "", (XmlElement) doc.ImportNode( document.DocumentElement, true ) );
         signedXml.AddObject( dataObject );
 
