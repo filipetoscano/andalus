@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Andalus.Cryptography.Xml.Algorithms;
+using Microsoft.Extensions.DependencyInjection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Xml;
 using System.Xml;
@@ -95,6 +96,75 @@ public class XmlDigSigTests : IClassFixture<Fixture>
             Certificate = b.Certificate,
             AddKeyInfo = KeyInfoPart.Certificate,
         } );
+
+
+        /*
+         * 
+         */
+        bool isValid = XmlDigSig.VerifyAll( signed );
+
+        Assert.True( isValid );
+    }
+
+
+    /// <summary />
+    [Theory]
+    [InlineData( XmlCanonicalization.XmlDsigC14NTransform )]
+    [InlineData( XmlCanonicalization.XmlDsigC14NWithCommentsTransform )]
+    [InlineData( XmlCanonicalization.XmlDsigC14N11Transform )]
+    [InlineData( XmlCanonicalization.XmlDsigC14N11WithCommentsTransform )]
+    [InlineData( XmlCanonicalization.XmlDsigExcC14NTransform )]
+    [InlineData( XmlCanonicalization.XmlDsigExcC14NWithCommentsTransform )]
+    public void Canonicalization( XmlCanonicalization canonicalization )
+    {
+        var doc = new XmlDocument() { PreserveWhitespace = true };
+        doc.LoadXml( @"<root>
+    <another />
+    <bites>
+        <the />
+        <dust />
+    </bites>
+</root>" );
+
+
+        /*
+         * 
+         */
+        var b = _f.Get( KeyType.EcdsaP256 );
+
+        var signed = XmlDigSig.Sign( SignatureType.Enveloping, doc, _cp, b.KeyReference, HashAlgorithmName.SHA256, new XmlDigSigOptions()
+        {
+            Canonicalization = canonicalization,
+            Certificate = b.Certificate,
+            AddKeyInfo = KeyInfoPart.Certificate,
+        } );
+
+
+        /*
+         * 
+         */
+        var mgr = new XmlNamespaceManager( new NameTable() );
+        mgr.AddNamespace( "ds", "http://www.w3.org/2000/09/xmldsig#" );
+
+
+        /*
+         * 
+         */
+        var expected = canonicalization.ToAlgorithmUrl();
+
+
+        /*
+         * ds:CanonicalizationMethod
+         */
+        var canonAttr = (XmlAttribute) signed.SelectSingleNode( " //ds:Signature/ds:SignedInfo/ds:CanonicalizationMethod/@Algorithm ", mgr )!;
+        Assert.Equal( expected, canonAttr.Value );
+
+
+        /*
+         * Last transform
+         */
+        var transformAttr = (XmlAttribute) signed.SelectSingleNode( " //ds:Signature//ds:Transforms/ds:Transform[ last() ]/@Algorithm ", mgr )!;
+        Assert.Equal( expected, transformAttr.Value );
 
 
         /*

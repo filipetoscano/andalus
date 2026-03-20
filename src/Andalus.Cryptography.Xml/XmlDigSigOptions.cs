@@ -7,6 +7,9 @@ namespace Andalus.Cryptography.Xml;
 public class XmlDigSigOptions
 {
     /// <summary />
+    public XmlCanonicalization Canonicalization { get; set; } = XmlCanonicalization.XmlDsigC14NTransform;
+
+    /// <summary />
     public X509Certificate2? Certificate { get; set; }
 
     /// <summary />
