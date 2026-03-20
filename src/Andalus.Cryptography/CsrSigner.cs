@@ -10,7 +10,7 @@ namespace Andalus.Cryptography;
 public class CsrSigner
 {
     /// <summary />
-    public async Task<Pkcs10CertificationRequest> CreateAsync(
+    public static async Task<Pkcs10CertificationRequest> CreateAsync(
         ICryptoProvider provider, KeyReference key,
         CsrData data,
         CancellationToken cancellationToken = default )

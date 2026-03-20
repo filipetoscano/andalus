@@ -258,7 +258,7 @@ public class XmlDigSig
          */
         var signature = ComputeSignature( signedXml, provider, key, hashAlgorithm, options );
 
-        var doc = new XmlDocument();
+        var doc = new XmlDocument() { PreserveWhitespace = true };
         var root = doc.ImportNode( signature, true );
         doc.AppendChild( root );
 
@@ -349,7 +349,7 @@ public class XmlDigSig
         if ( options.AddKeyInfo.HasFlag( KeyInfoPart.Certificate ) )
             x509Data.AddCertificate( options.Certificate );
 
-        if ( options.AddKeyInfo.HasFlag( KeyInfoPart.IssuerSerial ) )
+        if ( options.AddKeyInfo.HasFlag( KeyInfoPart.Issuer ) )
             x509Data.AddIssuerSerial( options.Certificate.Issuer, options.Certificate.SerialNumber );
 
         if ( options.AddKeyInfo.HasFlag( KeyInfoPart.SubjectName ) )

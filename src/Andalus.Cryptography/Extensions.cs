@@ -1,11 +1,19 @@
 ﻿using Org.BouncyCastle.Crypto.EC;
 using Org.BouncyCastle.Math;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Andalus.Cryptography;
 
 /// <summary />
 public static class Extensions
 {
+    /// <summary />
+    public static X509Certificate2 ToX509Certificate2( this Org.BouncyCastle.X509.X509Certificate value )
+    {
+        return X509CertificateLoader.LoadCertificate( value.GetEncoded() );
+    }
+
+
     /// <summary />
     public static KeyFamily Family( this KeyType keyType )
     {

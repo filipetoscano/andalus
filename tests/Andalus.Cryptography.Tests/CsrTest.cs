@@ -91,7 +91,7 @@ public class CsrSignerTests
             CommonName = "Common Name",
         } );
 
-        var x = await X509.SelfSignAsync( csr, p, kr, 365 );
+        var x = await X509.SelfSignAsync( p, kr, csr, 365 );
     }
 
 
@@ -112,8 +112,7 @@ public class CsrSignerTests
         /*
          * 
          */
-        var cs = new CsrSigner();
-        var csr = await cs.CreateAsync( p, keyRef, data );
+        var csr = await CsrSigner.CreateAsync( p, keyRef, data );
 
 
         /*

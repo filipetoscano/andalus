@@ -83,7 +83,7 @@ public class XmlSignCommand
          */
         var signed = XmlDigSig.Sign( this.SignatureType, doc, _crypto, this.KeyReference!, HashAlgorithmName.SHA256, new XmlDigSigOptions()
         {
-            AddKeyInfo = KeyInfoPart.Certificate | KeyInfoPart.IssuerSerial,
+            AddKeyInfo = KeyInfoPart.Certificate | KeyInfoPart.Issuer,
             Certificate = x509,
             EnvelopedSignaturePlacement = enveloped,
         } );

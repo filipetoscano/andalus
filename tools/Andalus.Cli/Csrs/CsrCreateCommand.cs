@@ -42,8 +42,7 @@ public class CsrCreateCommand
         var json = File.ReadAllText( this.CsrData! );
         var data = JsonSerializer.Deserialize<CsrData>( json )!;
 
-        var signer = new CsrSigner();
-        var csr = await signer.CreateAsync( _crypto, this.KeyReference!, data );
+        var csr = await CsrSigner.CreateAsync( _crypto, this.KeyReference!, data );
 
 
         /*

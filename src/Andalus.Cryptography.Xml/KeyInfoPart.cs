@@ -7,12 +7,18 @@ public enum KeyInfoPart
     /// <summary />
     None = 0,
 
-    /// <summary />
+    /// <summary>
+    /// Signing certificate.
+    /// </summary>
     Certificate = 1,
 
-    /// <summary />
+    /// <summary>
+    /// Subject name of signing certificate.
+    /// </summary>
     SubjectName = 2,
 
-    /// <summary />
-    IssuerSerial = 4,
+    /// <summary>
+    /// Subject name and serial number of issuer.
+    /// </summary>
+    Issuer = 4,
 }

@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Andalus.Cryptography.Xml.Tests;
 
@@ -12,10 +13,14 @@ public class Fixture : IAsyncLifetime
     public ServiceProvider Services { get; private set; } = null!;
 
     /// <summary />
-    public KeyReference EcdsaKey { get; set; } = null!;
+    private readonly Dictionary<KeyType, Bundle> _bundles = new Dictionary<KeyType, Bundle>();
+
 
     /// <summary />
-    public KeyReference RsaKey { get; set; } = null!;
+    public Bundle Get( KeyType keyType )
+    {
+        return _bundles[ keyType ];
+    }
 
 
     /// <summary />
@@ -25,17 +30,48 @@ public class Fixture : IAsyncLifetime
 
         var cp = Services.GetRequiredService<ICryptoProvider>();
 
-        this.EcdsaKey = await cp.CreateKeyPairAsync( new KeyCreationOptions()
+        foreach ( var v in Enum.GetValues<KeyType>() )
         {
-            KeyName = "ECDSA",
-            KeyType = KeyType.EcdsaSecp256k1,
+            var b = await CreateBundleAsync( cp, v );
+            _bundles.Add( v, b );
+        }
+    }
+
+
+    /// <summary />
+    private async Task<Bundle> CreateBundleAsync( ICryptoProvider provider, KeyType keyType )
+    {
+        var keyRef = await provider.CreateKeyPairAsync( new KeyCreationOptions()
+        {
+            KeyName = keyType.ToString(),
+            KeyType = keyType,
         } );
 
-        this.RsaKey = await cp.CreateKeyPairAsync( new KeyCreationOptions()
+        var csr = await CsrSigner.CreateAsync( provider, keyRef, new CsrData()
         {
-            KeyName = "RSA",
-            KeyType = KeyType.Rsa2048,
+            CommonName = "Fixture " + keyType.ToString(),
+            Country = "PT",
         } );
+
+        var cert = await X509.SelfSignAsync( provider, keyRef, csr );
+        var x509 = cert.ToX509Certificate2();
+
+        return new Bundle()
+        {
+            KeyReference = keyRef,
+            Certificate = x509,
+        };
+    }
+
+
+    /// <summary />
+    public class Bundle
+    {
+        /// <summary />
+        public required KeyReference KeyReference { get; set; }
+
+        /// <summary />
+        public required X509Certificate2 Certificate { get; set; }
     }
 
 

@@ -13,9 +13,9 @@ public class X509
 {
     /// <summary />
     public static async Task<X509Certificate> SelfSignAsync(
-        Pkcs10CertificationRequest csr,
         ICryptoProvider provider,
         KeyReference key,
+        Pkcs10CertificationRequest csr,
         int validityDays = 365,
         CancellationToken cancellationToken = default )
     {
@@ -90,5 +90,25 @@ public class X509
         cert.Verify( publicKey );
 
         return cert;
+    }
+
+
+    /// <summary />
+    public static async Task<X509Certificate> SignAsync(
+        ICryptoProvider provider,
+        KeyReference key,
+        X509Certificate certificate,
+        Pkcs10CertificationRequest csr,
+        int validityDays = 365,
+        CancellationToken cancellationToken = default )
+    {
+        /*
+         * 
+         */
+        if ( csr.Verify() == false )
+            throw new InvalidOperationException( "CSR signature verification failed." );
+
+
+        throw new NotImplementedException();
     }
 }
