@@ -24,7 +24,7 @@ public sealed class HsmRsa : RSA
         _provider = provider;
         _key = key;
 
-        LegalKeySizesValue = [ new KeySizes( 2048, 4096, 0 ) ];
+        LegalKeySizesValue = [ new KeySizes( 2048, 4096, 1024 ) ];
         KeySize = key.KeyType switch
         {
             KeyType.Rsa2048 => 2048,

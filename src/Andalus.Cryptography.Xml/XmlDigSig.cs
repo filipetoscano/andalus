@@ -32,6 +32,7 @@ public class XmlDigSig
         foreach ( XmlElement signatureElement in signatureNodes )
         {
             var signedXml = new SignedXml( document );
+            signedXml.SafeCanonicalizationMethods.Add( SignedXml.XmlDsigXPathTransformUrl );
             signedXml.LoadXml( signatureElement );
 
             if ( signedXml.CheckSignature() == false )
@@ -58,6 +59,7 @@ public class XmlDigSig
         foreach ( XmlElement signatureElement in signatureNodes )
         {
             var signedXml = new SignedXml( document );
+            signedXml.SafeCanonicalizationMethods.Add( SignedXml.XmlDsigXPathTransformUrl );
             signedXml.LoadXml( signatureElement );
 
             if ( signedXml.CheckSignature( certificate, true ) == false )
@@ -89,6 +91,7 @@ public class XmlDigSig
             return false;
 
         var signedXml = new SignedXml( document );
+        signedXml.SafeCanonicalizationMethods.Add( SignedXml.XmlDsigXPathTransformUrl );
         signedXml.LoadXml( signatureElement );
 
         return signedXml.CheckSignature();
@@ -116,6 +119,7 @@ public class XmlDigSig
             return false;
 
         var signedXml = new SignedXml( document );
+        signedXml.SafeCanonicalizationMethods.Add( SignedXml.XmlDsigXPathTransformUrl );
         signedXml.LoadXml( signatureElement );
 
         return signedXml.CheckSignature( certificate, true );
@@ -174,6 +178,7 @@ public class XmlDigSig
          * 
          */
         var signedXml = new SignedXml( document );
+        signedXml.SafeCanonicalizationMethods.Add( SignedXml.XmlDsigXPathTransformUrl );
         signedXml.AddReference( docRef );
 
 
@@ -208,7 +213,9 @@ public class XmlDigSig
          * 
          */
         var doc = new XmlDocument { PreserveWhitespace = true };
+
         var signedXml = new SignedXml();
+        signedXml.SafeCanonicalizationMethods.Add( SignedXml.XmlDsigXPathTransformUrl );
 
         const string objectId = "signed-content";
         var dataObject = new DataObject( objectId, "", "", (XmlElement) doc.ImportNode( document.DocumentElement, true ) );
@@ -250,6 +257,7 @@ public class XmlDigSig
         var extRef = CreateReference( "", options );
 
         var signedXml = new SignedXml( document );
+        signedXml.SafeCanonicalizationMethods.Add( SignedXml.XmlDsigXPathTransformUrl );
         signedXml.AddReference( extRef );
 
 
@@ -271,7 +279,7 @@ public class XmlDigSig
     {
         var reference = new Reference( uri );
 
-        if ( enveloped )
+        if ( enveloped == true )
             reference.AddTransform( new XmlDsigEnvelopedSignatureTransform() );
 
         if ( options?.ReferenceTransforms != null )

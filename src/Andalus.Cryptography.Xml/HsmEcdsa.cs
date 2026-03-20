@@ -33,7 +33,13 @@ public sealed class HsmEcdsa : ECDsa
             _ => HashAlgorithmName.SHA256,
         };
 
-        LegalKeySizesValue = [ new KeySizes( 256, 521, 0 ) ];
+        LegalKeySizesValue =
+        [
+            new KeySizes( 256, 256, 0 ),
+            new KeySizes( 384, 384, 0 ),
+            new KeySizes( 521, 521, 0 ),
+        ];
+
         KeySize = key.KeyType switch
         {
             KeyType.EcdsaP256 => 256,
