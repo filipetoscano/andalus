@@ -1,36 +1,15 @@
 ﻿using System.Security.Cryptography;
 
-namespace Andalus.Cryptography.Xml;
-
-
-/// <summary />
-public static class CryptoConfigConfiguration
-{
-    private static Lazy<bool> _registration = new Lazy<bool>( AddAlgorithms );
-
-
-    /// <summary />
-    public static void Register()
-    {
-        _ = _registration.Value;
-    }
-
-
-    /// <summary />
-    private static bool AddAlgorithms()
-    {
-        CryptoConfig.AddAlgorithm( typeof( EcdsaSha256SignatureDescription ), "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256" );
-        CryptoConfig.AddAlgorithm( typeof( EcdsaSha384SignatureDescription ), "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha384" );
-        CryptoConfig.AddAlgorithm( typeof( EcdsaSha512SignatureDescription ), "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha512" );
-
-        return true;
-    }
-}
+namespace Andalus.Cryptography.Xml.Algorithms;
 
 
 /// <summary />
 public sealed class EcdsaSha256SignatureDescription : SignatureDescription
 {
+    /// <summary />
+    public const string AlgorithmUrl = "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256";
+
+
     /// <summary />
     public EcdsaSha256SignatureDescription()
     {
@@ -55,6 +34,10 @@ public sealed class EcdsaSha256SignatureDescription : SignatureDescription
 public sealed class EcdsaSha384SignatureDescription : SignatureDescription
 {
     /// <summary />
+    public const string AlgorithmUrl = "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha384";
+
+
+    /// <summary />
     public EcdsaSha384SignatureDescription()
     {
         KeyAlgorithm = typeof( ECDsa ).AssemblyQualifiedName!;
@@ -77,6 +60,10 @@ public sealed class EcdsaSha384SignatureDescription : SignatureDescription
 /// <summary />
 public sealed class EcdsaSha512SignatureDescription : SignatureDescription
 {
+    /// <summary />
+    public const string AlgorithmUrl = "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha512";
+
+
     /// <summary />
     public EcdsaSha512SignatureDescription()
     {

@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography;
+﻿using Andalus.Cryptography.Xml.Algorithms;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
 using System.Xml;
@@ -32,7 +33,10 @@ public class XmlDigSig
         foreach ( XmlElement signatureElement in signatureNodes )
         {
             var signedXml = new SignedXml( document );
+            signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11Transform.AlgorithmUri );
+            signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11WithCommentsTransform.AlgorithmUri );
             signedXml.SafeCanonicalizationMethods.Add( SignedXml.XmlDsigXPathTransformUrl );
+
             signedXml.LoadXml( signatureElement );
 
             if ( signedXml.CheckSignature() == false )
@@ -59,7 +63,10 @@ public class XmlDigSig
         foreach ( XmlElement signatureElement in signatureNodes )
         {
             var signedXml = new SignedXml( document );
+            signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11Transform.AlgorithmUri );
+            signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11WithCommentsTransform.AlgorithmUri );
             signedXml.SafeCanonicalizationMethods.Add( SignedXml.XmlDsigXPathTransformUrl );
+
             signedXml.LoadXml( signatureElement );
 
             if ( signedXml.CheckSignature( certificate, true ) == false )
@@ -91,7 +98,10 @@ public class XmlDigSig
             return false;
 
         var signedXml = new SignedXml( document );
+        signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11Transform.AlgorithmUri );
+        signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11WithCommentsTransform.AlgorithmUri );
         signedXml.SafeCanonicalizationMethods.Add( SignedXml.XmlDsigXPathTransformUrl );
+
         signedXml.LoadXml( signatureElement );
 
         return signedXml.CheckSignature();
@@ -178,6 +188,8 @@ public class XmlDigSig
          * 
          */
         var signedXml = new SignedXml( document );
+        signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11Transform.AlgorithmUri );
+        signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11WithCommentsTransform.AlgorithmUri );
         signedXml.SafeCanonicalizationMethods.Add( SignedXml.XmlDsigXPathTransformUrl );
         signedXml.AddReference( docRef );
 
@@ -215,6 +227,8 @@ public class XmlDigSig
         var doc = new XmlDocument { PreserveWhitespace = true };
 
         var signedXml = new SignedXml();
+        signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11Transform.AlgorithmUri );
+        signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11WithCommentsTransform.AlgorithmUri );
         signedXml.SafeCanonicalizationMethods.Add( SignedXml.XmlDsigXPathTransformUrl );
 
         const string objectId = "signed-content";
@@ -257,7 +271,10 @@ public class XmlDigSig
         var extRef = CreateReference( "", options );
 
         var signedXml = new SignedXml( document );
+        signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11Transform.AlgorithmUri );
+        signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11WithCommentsTransform.AlgorithmUri );
         signedXml.SafeCanonicalizationMethods.Add( SignedXml.XmlDsigXPathTransformUrl );
+
         signedXml.AddReference( extRef );
 
 
@@ -282,13 +299,36 @@ public class XmlDigSig
         if ( enveloped == true )
             reference.AddTransform( new XmlDsigEnvelopedSignatureTransform() );
 
+
+        /*
+         * 
+         */
         if ( options?.ReferenceTransforms != null )
         {
             foreach ( var transform in options.ReferenceTransforms )
                 reference.AddTransform( transform );
         }
 
-        reference.AddTransform( new XmlDsigExcC14NTransform() );
+
+        /*
+         * 
+         */
+        var canon = options?.Canonicalization ?? XmlCanonicalization.XmlDsigC14NTransform;
+        Transform trans = canon switch
+        {
+            XmlCanonicalization.XmlDsigC14NTransform => new XmlDsigC14NTransform(),
+            XmlCanonicalization.XmlDsigC14NWithCommentsTransform => new XmlDsigC14NWithCommentsTransform(),
+
+            XmlCanonicalization.XmlDsigC14N11Transform => new XmlDsigC14N11Transform(),
+            XmlCanonicalization.XmlDsigC14N11WithCommentsTransform => new XmlDsigC14N11WithCommentsTransform(),
+
+            XmlCanonicalization.XmlDsigExcC14NTransform => new XmlDsigExcC14NTransform(),
+            XmlCanonicalization.XmlDsigExcC14NWithCommentsTransform => new XmlDsigExcC14NWithCommentsTransform(),
+
+            _ => throw new NotSupportedException( $"Xml canonicalization '{canon}' is not supported" ),
+        };
+
+        reference.AddTransform( trans );
 
         return reference;
     }
@@ -302,10 +342,12 @@ public class XmlDigSig
         HashAlgorithmName hashAlgorithm,
         XmlDigSigOptions? options )
     {
+        var canon = options?.Canonicalization ?? XmlCanonicalization.XmlDsigC14NTransform;
+
         using var proxy = CreateSigningProxy( provider, key, hashAlgorithm );
 
         signedXml.SigningKey = proxy;
-        signedXml.SignedInfo!.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
+        signedXml.SignedInfo!.CanonicalizationMethod = canon.ToAlgorithmUrl();
         signedXml.SignedInfo.SignatureMethod = ToSignatureMethod( key.KeyType.Family(), hashAlgorithm );
 
         // Set digest method on all references
