@@ -26,7 +26,7 @@ public class XmlDigSig
         if ( document.PreserveWhitespace == false )
             throw new InvalidOperationException( "Expected XML document to be initialized with PreserveWhitespace = true" );
 
-        var signatureNodes = document.SelectNodes( " //ds:Signature ", Ns.Manager );
+        var signatureNodes = document.SelectNodes( " //ds:Signature ", XmlNs.Manager );
 
         if ( signatureNodes == null || signatureNodes.Count == 0 )
             return false;
@@ -56,7 +56,7 @@ public class XmlDigSig
         if ( document.PreserveWhitespace == false )
             throw new InvalidOperationException( "Expected XML document to be initialized with PreserveWhitespace = true" );
 
-        var signatureNodes = document.SelectNodes( " //ds:Signature ", Ns.Manager );
+        var signatureNodes = document.SelectNodes( " //ds:Signature ", XmlNs.Manager );
 
         if ( signatureNodes == null || signatureNodes.Count == 0 )
             return false;
@@ -176,7 +176,7 @@ public class XmlDigSig
          * 
          */
         var enveloped = options?.EnvelopedSignaturePlacement ?? new Placements.FirstChildPlacement();
-        enveloped.EnsureLocation( document );
+        enveloped.PreSignature( document );
 
 
         /*

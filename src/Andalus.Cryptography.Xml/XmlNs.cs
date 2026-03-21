@@ -4,7 +4,7 @@ using System.Xml;
 namespace Andalus.Cryptography.Xml;
 
 /// <summary />
-public class Ns
+public class XmlNs
 {
     /// <summary />
     public const string DigSig = SignedXml.XmlDsigNamespaceUrl;

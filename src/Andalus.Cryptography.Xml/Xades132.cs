@@ -25,11 +25,11 @@ public class Xades132
          */
         var elem = (XmlElement) document.ImportNode( _fragment.Value, true );
 
-        elem.SelectSingleNode( " //x132:SignedProperties/@Id ", Ns.Manager )!.Value = "xades-" + Guid.NewGuid().ToString();
-        elem.SelectSingleNode( " //x132:SigningTime ", Ns.Manager )!.InnerText = XmlConvert.ToString( DateTime.UtcNow, XmlDateTimeSerializationMode.Utc );
-        elem.SelectSingleNode( " //ds:DigestValue ", Ns.Manager )!.InnerText = Convert.ToBase64String( bytes );
-        elem.SelectSingleNode( " //ds:X509IssuerName ", Ns.Manager )!.InnerText = certificate.Issuer;
-        elem.SelectSingleNode( " //ds:X509SerialNumber ", Ns.Manager )!.InnerText = HexToDecimal( certificate.SerialNumber );
+        elem.SelectSingleNode( " //x132:SignedProperties/@Id ", XmlNs.Manager )!.Value = "xades-" + Guid.NewGuid().ToString();
+        elem.SelectSingleNode( " //x132:SigningTime ", XmlNs.Manager )!.InnerText = XmlConvert.ToString( DateTime.UtcNow, XmlDateTimeSerializationMode.Utc );
+        elem.SelectSingleNode( " //ds:DigestValue ", XmlNs.Manager )!.InnerText = Convert.ToBase64String( bytes );
+        elem.SelectSingleNode( " //ds:X509IssuerName ", XmlNs.Manager )!.InnerText = certificate.Issuer;
+        elem.SelectSingleNode( " //ds:X509SerialNumber ", XmlNs.Manager )!.InnerText = HexToDecimal( certificate.SerialNumber );
 
         return elem;
     }

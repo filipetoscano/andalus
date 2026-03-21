@@ -18,14 +18,7 @@ public class FirstChildPlacement : IEnvelopedSignaturePlacement
 
 
     /// <inheritdoc />
-    public void EnsureLocation( XmlDocument document )
+    public void PreSignature( XmlDocument document )
     {
-    }
-
-
-    /// <inheritdoc />
-    public bool HasLocation( XmlDocument document )
-    {
-        return true;
     }
 }
