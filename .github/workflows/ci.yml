@@ -46,4 +46,4 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           report_type: test_results
           directory: ./TestResults
-          files: "**/*.test-results.xml"
+          files: "**/*.junit.xml"

@@ -27,7 +27,8 @@ cd ..
 dotnet clean   -c Release
 dotnet restore --packages .nuget
 dotnet build   -c Release --no-restore
-dotnet test --results-directory TestResults --coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml --report-junit --report-junit-filename test-results.junit.xml
+
+[ -d ./TestResults ] && rm -rf ./TestResults
 
 for proj in $(find . -name "*.Tests.csproj"); do
   name=$(basename "$proj" .csproj)
