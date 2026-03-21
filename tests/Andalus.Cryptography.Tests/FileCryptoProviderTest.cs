@@ -29,7 +29,7 @@ public class FileCryptoProviderTest
             KeyType = keyType,
             Exportable = false,
             MomentExpiry = DateTime.MaxValue,
-        } );
+        }, TestContext.Current.CancellationToken );
 
 
         /*
@@ -38,20 +38,20 @@ public class FileCryptoProviderTest
         var digest = new byte[ 32 ];
         Random.Shared.NextBytes( digest );
 
-        var sr = await p.SignHashAsync( keyRef, digest, HashAlgorithmName.SHA256 );
+        var sr = await p.SignHashAsync( keyRef, digest, HashAlgorithmName.SHA256, TestContext.Current.CancellationToken );
         var sig = sr.Signature;
 
 
         /*
          * 
          */
-        var ok = await p.VerifyHashAsync( keyRef, digest, sig, HashAlgorithmName.SHA256 );
+        var ok = await p.VerifyHashAsync( keyRef, digest, sig, HashAlgorithmName.SHA256, TestContext.Current.CancellationToken );
         Assert.True( ok );
 
 
         /*
          * 
          */
-        await p.RemoveKeyPairAsync( keyRef );
+        await p.RemoveKeyPairAsync( keyRef, TestContext.Current.CancellationToken );
     }
 }

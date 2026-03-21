@@ -2,6 +2,7 @@
 /.nuget/
 /data/
 /nupkg/
+/TestResults/
 /sample/
 
 # Specific

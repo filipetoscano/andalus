@@ -141,6 +141,9 @@ public class KeyVaultCryptoProvider : ICryptoProvider
         var bytes = hash.ToArray();
         var sigAlgo = ToSignatureAlgorithm( key.KeyType, hashAlgorithm );
 
+        if ( family == KeyFamily.Ecdsa )
+            CheckHashAlgorithm( key.KeyType, hashAlgorithm );
+
 
         /*
          * 
@@ -182,7 +185,10 @@ public class KeyVaultCryptoProvider : ICryptoProvider
         var sigAlgo = ToSignatureAlgorithm( key.KeyType, hashAlgorithm );
 
         if ( family == KeyFamily.Ecdsa )
+        {
+            CheckHashAlgorithm( key.KeyType, hashAlgorithm );
             signBytes = SignatureFormat.ConvertDerToIeeeP1363( signBytes, key.KeyType.CurveOrder() );
+        }
 
 
         /*
@@ -193,6 +199,30 @@ public class KeyVaultCryptoProvider : ICryptoProvider
         var result = await client.VerifyAsync( sigAlgo, hashBytes, signBytes, cancellationToken );
 
         return result.IsValid;
+    }
+
+
+    /// <summary>
+    /// For ECDsa keys, KeyVault follows RFC 7518 (JWA) where the ES* algorithms pair
+    /// the key/curve with the hash algorithm.
+    /// </summary>
+    /// <remarks>
+    /// This is not the case with RSA, where any hash can be used regardless of the
+    /// key size.
+    /// </remarks>
+    private void CheckHashAlgorithm( KeyType keyType, HashAlgorithmName hashAlgorithm )
+    {
+        if ( keyType == KeyType.EcdsaP256 && hashAlgorithm.Name != "SHA256" )
+            throw new ArgumentOutOfRangeException( "KeyVault requires SHA-256 for EcdsaP256 keys" );
+
+        if ( keyType == KeyType.EcdsaSecp256k1 && hashAlgorithm.Name != "SHA256" )
+            throw new ArgumentOutOfRangeException( "KeyVault requires SHA-256 for EcdsaSecp256k1 keys" );
+
+        if ( keyType == KeyType.EcdsaP384 && hashAlgorithm.Name != "SHA384" )
+            throw new ArgumentOutOfRangeException( "KeyVault requires SHA-384 for EcdsaP384 keys" );
+
+        if ( keyType == KeyType.EcdsaP521 && hashAlgorithm.Name != "SHA512" )
+            throw new ArgumentOutOfRangeException( "KeyVault requires SHA-512 for EcdsaP521 keys" );
     }
 
 

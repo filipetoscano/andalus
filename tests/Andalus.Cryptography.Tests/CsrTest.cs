@@ -91,7 +91,7 @@ public class CsrSignerTests
             CommonName = "Common Name",
         } );
 
-        var x = await X509.SelfSignAsync( p, kr, csr, 365 );
+        var x = await X509.SelfSignAsync( p, kr, csr, 365, null, TestContext.Current.CancellationToken );
     }
 
 

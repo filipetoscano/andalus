@@ -24,7 +24,7 @@ public class Fixture : IAsyncLifetime
 
 
     /// <summary />
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         this.Services = SetupDependencyInjection();
 
@@ -76,7 +76,7 @@ public class Fixture : IAsyncLifetime
 
 
     /// <summary />
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         if ( Services is IAsyncDisposable ad )
             await ad.DisposeAsync();

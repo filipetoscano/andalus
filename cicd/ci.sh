@@ -27,6 +27,18 @@ cd ..
 dotnet clean   -c Release
 dotnet restore --packages .nuget
 dotnet build   -c Release --no-restore
-dotnet test --collect:"XPlat Code Coverage" --logger "junit;LogFilePath=$(pwd)/TestResults/{assembly}.test-results.xml" --results-directory ./TestResults
+dotnet test --results-directory TestResults --coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml --report-junit --report-junit-filename test-results.junit.xml
+
+for proj in $(find . -name "*.Tests.csproj"); do
+  name=$(basename "$proj" .csproj)
+
+  dotnet test --project "$proj" \
+    --results-directory "TestResults/$name" \
+    --coverage \
+    --coverage-output-format cobertura \
+    --coverage-output coverage.cobertura.xml \
+    --report-junit \
+    --report-junit-filename test-results.junit.xml
+done
 
 # eof
