@@ -175,7 +175,7 @@ public class XmlDigSig
         /*
          * 
          */
-        var enveloped = options?.EnvelopedSignaturePlacement ?? new FirstChildPlacement();
+        var enveloped = options?.EnvelopedSignaturePlacement ?? new Placements.FirstChildPlacement();
         enveloped.EnsureLocation( document );
 
 

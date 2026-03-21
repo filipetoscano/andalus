@@ -3,12 +3,19 @@
 /// <summary />
 public enum SignatureType
 {
-    /// <summary />
+    /// <summary>
+    /// Signature is placed within the document being signed,
+    /// at a location which does not break the document schema.
+    /// </summary>
     Enveloped,
 
-    /// <summary />
+    /// <summary>
+    /// Signature contains the document being signed.
+    /// </summary>
     Enveloping,
 
-    /// <summary />
+    /// <summary>
+    /// Signature exists as distinct separate document.
+    /// </summary>
     Detached,
 }
