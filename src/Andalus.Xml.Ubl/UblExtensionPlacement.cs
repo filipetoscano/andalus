@@ -1,4 +1,5 @@
 ﻿using Andalus.Cryptography.Xml;
+using System.Security.Cryptography.Xml;
 using System.Xml;
 
 namespace Andalus.Xml.Ubl;
@@ -16,6 +17,38 @@ public class UblExtensionPlacement : IEnvelopedSignaturePlacement
     {
         _role = role;
         _partyIdentification = partyIdentification;
+    }
+
+
+    /// <inheritdoc />
+    public List<Transform>? GetTransforms()
+    {
+        var sigId = "urn:oasis:names:specification:ubl:signature:" + _role;
+
+        var excludeOtherUblSigs = new XPathExclusion()
+        {
+            XPath = $"not( ancestor-or-self::ext:UBLExtension[ .//sbc:ReferencedSignatureID != '{sigId}' ] )",
+            Namespaces = new()
+            {
+                { "ext", UblNs.ExtensionUrn },
+                { "sbc", UblNs.SignatureBasicUrn },
+            }
+        };
+
+        var excludeOtherSigs = new XPathExclusion()
+        {
+            XPath = $"not( ancestor-or-self::cac:Signature[ cbc:ID != '{sigId}' ] )",
+            Namespaces = new()
+            {
+                { "cac", UblNs.AggregateUrn },
+                { "cbc", UblNs.BasicUrn },
+            }
+        };
+
+        return [
+            excludeOtherSigs.ToTransform(),
+            excludeOtherUblSigs.ToTransform(),
+        ];
     }
 
 
@@ -53,6 +86,8 @@ public class UblExtensionPlacement : IEnvelopedSignaturePlacement
 
         var supplier = root.Single( " cac:AccountingSupplierParty " )!;
         root.InsertBefore( bodySig, supplier );
+        bodySig.RemoveAttribute( "xmlns:cac" );
+        bodySig.RemoveAttribute( "xmlns:cbc" );
 
 
         /*

@@ -1,4 +1,5 @@
-﻿using System.Xml;
+﻿using System.Security.Cryptography.Xml;
+using System.Xml;
 
 namespace Andalus.Cryptography.Xml;
 
@@ -7,6 +8,9 @@ namespace Andalus.Cryptography.Xml;
 /// </summary>
 public interface IEnvelopedSignaturePlacement
 {
+    /// <summary />
+    List<Transform>? GetTransforms();
+
     /// <summary />
     void PreSignature( XmlDocument document );
 

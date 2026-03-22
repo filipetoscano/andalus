@@ -1,11 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <cec:UBLExtension
-  xmlns:cec="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2"
   xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
+  xmlns:cec="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2"
   xmlns:csc="urn:oasis:names:specification:ubl:schema:xsd:CommonSignatureComponents-2"
   xmlns:sac="urn:oasis:names:specification:ubl:schema:xsd:SignatureAggregateComponents-2"
   xmlns:sbc="urn:oasis:names:specification:ubl:schema:xsd:SignatureBasicComponents-2">
-
   <cec:ExtensionURI>urn:oasis:names:specification:ubl:dsig:enveloped:xades</cec:ExtensionURI>
   <cec:ExtensionContent>
     <csc:UBLDocumentSignatures>

@@ -1,5 +1,6 @@
 ﻿using Andalus.Cryptography.Xml.Algorithms;
 using Andalus.Cryptography.Xml.Internals;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
@@ -130,6 +131,8 @@ public class XmlDigSig
             return false;
 
         var signedXml = new SignedXml( document );
+        signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11Transform.AlgorithmUri );
+        signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11WithCommentsTransform.AlgorithmUri );
         signedXml.SafeCanonicalizationMethods.Add( SignedXml.XmlDsigXPathTransformUrl );
         signedXml.LoadXml( signatureElement );
 
@@ -297,8 +300,22 @@ public class XmlDigSig
     {
         var reference = new Reference( uri );
 
+
+        /*
+         * 
+         */
         if ( enveloped == true )
+        {
             reference.AddTransform( new XmlDsigEnvelopedSignatureTransform() );
+
+            var extra = options?.EnvelopedSignaturePlacement?.GetTransforms();
+
+            if ( extra != null )
+            {
+                foreach ( var transform in extra )
+                    reference.AddTransform( transform );
+            }
+        }
 
 
         /*

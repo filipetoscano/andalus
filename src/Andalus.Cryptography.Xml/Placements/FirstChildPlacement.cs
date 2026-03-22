@@ -1,4 +1,5 @@
-﻿using System.Xml;
+﻿using System.Security.Cryptography.Xml;
+using System.Xml;
 
 namespace Andalus.Cryptography.Xml.Placements;
 
@@ -7,6 +8,13 @@ namespace Andalus.Cryptography.Xml.Placements;
 /// </summary>
 public class FirstChildPlacement : IEnvelopedSignaturePlacement
 {
+    /// <inheritdoc />
+    public List<Transform>? GetTransforms()
+    {
+        return null;
+    }
+
+
     /// <inheritdoc />
     public void PlaceSignature( XmlDocument document, XmlElement signature )
     {
