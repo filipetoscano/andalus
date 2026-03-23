@@ -1,6 +1,5 @@
 ﻿using Andalus.Cryptography.Xml.Algorithms;
 using Andalus.Cryptography.Xml.Internals;
-using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
@@ -34,7 +33,7 @@ public class XmlDigSig
 
         foreach ( XmlElement signatureElement in signatureNodes )
         {
-            var signedXml = new SignedXml( document );
+            var signedXml = new AndalusSignedXml( document );
             signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11Transform.AlgorithmUri );
             signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11WithCommentsTransform.AlgorithmUri );
             signedXml.SafeCanonicalizationMethods.Add( SignedXml.XmlDsigXPathTransformUrl );
@@ -64,7 +63,7 @@ public class XmlDigSig
 
         foreach ( XmlElement signatureElement in signatureNodes )
         {
-            var signedXml = new SignedXml( document );
+            var signedXml = new AndalusSignedXml( document );
             signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11Transform.AlgorithmUri );
             signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11WithCommentsTransform.AlgorithmUri );
             signedXml.SafeCanonicalizationMethods.Add( SignedXml.XmlDsigXPathTransformUrl );
@@ -99,7 +98,7 @@ public class XmlDigSig
         if ( signatureElement == null )
             return false;
 
-        var signedXml = new SignedXml( document );
+        var signedXml = new AndalusSignedXml( document );
         signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11Transform.AlgorithmUri );
         signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11WithCommentsTransform.AlgorithmUri );
         signedXml.SafeCanonicalizationMethods.Add( SignedXml.XmlDsigXPathTransformUrl );
@@ -130,7 +129,7 @@ public class XmlDigSig
         if ( signatureElement == null )
             return false;
 
-        var signedXml = new SignedXml( document );
+        var signedXml = new AndalusSignedXml( document );
         signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11Transform.AlgorithmUri );
         signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11WithCommentsTransform.AlgorithmUri );
         signedXml.SafeCanonicalizationMethods.Add( SignedXml.XmlDsigXPathTransformUrl );
@@ -185,17 +184,20 @@ public class XmlDigSig
         /*
          * 
          */
-        var docRef = CreateReference( "", options, enveloped: true );
+        var signedXml = new AndalusSignedXml( document );
+        signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11Transform.AlgorithmUri );
+        signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11WithCommentsTransform.AlgorithmUri );
+        signedXml.SafeCanonicalizationMethods.Add( SignedXml.XmlDsigXPathTransformUrl );
 
 
         /*
          * 
          */
-        var signedXml = new SignedXml( document );
-        signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11Transform.AlgorithmUri );
-        signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11WithCommentsTransform.AlgorithmUri );
-        signedXml.SafeCanonicalizationMethods.Add( SignedXml.XmlDsigXPathTransformUrl );
+        var docRef = CreateReference( "", options, enveloped: true );
         signedXml.AddReference( docRef );
+
+        if ( options?.Profile == SignatureProfile.Xades132 )
+            AddXadesReference( signedXml, hashAlgorithm, options );
 
 
         /*
@@ -230,7 +232,7 @@ public class XmlDigSig
          */
         var doc = new XmlDocument { PreserveWhitespace = true };
 
-        var signedXml = new SignedXml();
+        var signedXml = new AndalusSignedXml();
         signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11Transform.AlgorithmUri );
         signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11WithCommentsTransform.AlgorithmUri );
         signedXml.SafeCanonicalizationMethods.Add( SignedXml.XmlDsigXPathTransformUrl );
@@ -245,6 +247,9 @@ public class XmlDigSig
          */
         var objRef = CreateReference( $"#{objectId}", options );
         signedXml.AddReference( objRef );
+
+        if ( options?.Profile == SignatureProfile.Xades132 )
+            AddXadesReference( signedXml, hashAlgorithm, options );
 
 
         /*
@@ -272,14 +277,20 @@ public class XmlDigSig
         /*
          * 
          */
-        var extRef = CreateReference( "", options );
-
-        var signedXml = new SignedXml( document );
+        var signedXml = new AndalusSignedXml( document );
         signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11Transform.AlgorithmUri );
         signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11WithCommentsTransform.AlgorithmUri );
         signedXml.SafeCanonicalizationMethods.Add( SignedXml.XmlDsigXPathTransformUrl );
 
+
+        /*
+         * 
+         */
+        var extRef = CreateReference( "", options );
         signedXml.AddReference( extRef );
+
+        if ( options?.Profile == SignatureProfile.Xades132 )
+            AddXadesReference( signedXml, hashAlgorithm, options );
 
 
         /*
@@ -302,7 +313,7 @@ public class XmlDigSig
 
 
         /*
-         * 
+         *
          */
         if ( enveloped == true )
         {
@@ -319,7 +330,7 @@ public class XmlDigSig
 
 
         /*
-         * 
+         *
          */
         if ( options?.ReferenceTransforms != null )
         {
@@ -329,26 +340,45 @@ public class XmlDigSig
 
 
         /*
-         * 
+         *
          */
         var canon = options?.Canonicalization ?? XmlCanonicalization.XmlDsigC14NTransform;
-        Transform trans = canon switch
-        {
-            XmlCanonicalization.XmlDsigC14NTransform => new XmlDsigC14NTransform(),
-            XmlCanonicalization.XmlDsigC14NWithCommentsTransform => new XmlDsigC14NWithCommentsTransform(),
-
-            XmlCanonicalization.XmlDsigC14N11Transform => new XmlDsigC14N11Transform(),
-            XmlCanonicalization.XmlDsigC14N11WithCommentsTransform => new XmlDsigC14N11WithCommentsTransform(),
-
-            XmlCanonicalization.XmlDsigExcC14NTransform => new XmlDsigExcC14NTransform(),
-            XmlCanonicalization.XmlDsigExcC14NWithCommentsTransform => new XmlDsigExcC14NWithCommentsTransform(),
-
-            _ => throw new NotSupportedException( $"Xml canonicalization '{canon}' is not supported" ),
-        };
-
-        reference.AddTransform( trans );
+        reference.AddTransform( CreateCanonicalizationTransform( canon ) );
 
         return reference;
+    }
+
+
+    /// <summary />
+    private static void AddXadesReference( SignedXml signedXml, HashAlgorithmName hashAlgorithm, XmlDigSigOptions? options )
+    {
+        if ( options?.Certificate is null )
+            throw new InvalidOperationException( "Certificate is required for XAdES 1.3.2 profile." );
+
+        var sigId = "sig-" + Guid.NewGuid().ToString();
+        signedXml.Signature.Id = sigId;
+
+        var tempDoc = new XmlDocument { PreserveWhitespace = true };
+        var xadesElement = Xades132.BuildXadesObject( tempDoc, options.Certificate );
+        xadesElement.SetAttribute( "Target", "#" + sigId );
+
+        var signedPropsId = xadesElement
+            .SelectSingleNode( "//x132:SignedProperties/@Id", XmlNs.Manager )!.Value;
+
+        var xadesObject = new DataObject( "xades-object-" + Guid.NewGuid(), "", "", xadesElement );
+        signedXml.AddObject( xadesObject );
+
+        var xadesRef = new Reference( "#" + signedPropsId )
+        {
+            Type = "http://uri.etsi.org/01903#SignedProperties",
+            DigestMethod = ToDigestMethod( hashAlgorithm ),
+        };
+
+        // XAdES spec (ETSI EN 319 132) recommends exclusive C14N for xades:SignedProperties
+        // to avoid inheriting ancestor namespace declarations that differ between signing
+        // and verification contexts.
+        xadesRef.AddTransform( CreateCanonicalizationTransform( XmlCanonicalization.XmlDsigExcC14NTransform ) );
+        signedXml.AddReference( xadesRef );
     }
 
 
@@ -376,11 +406,69 @@ public class XmlDigSig
 
         AddKeyInfo( signedXml, options );
 
+
+        /*
+         * XAdES 1.3.2
+         * Add QualifyingProperties as a ds:Object and reference to xades:SignedProperties
+         */
+        //if ( options?.Profile == SignatureProfile.Xades132 )
+        //{
+        //    if ( options.Certificate is null )
+        //        throw new InvalidOperationException( "Certificate is required for XAdES 1.3.2 profile." );
+
+        //    var sigId = "sig-" + Guid.NewGuid().ToString();
+        //    signedXml.Signature.Id = sigId;
+
+        //    var tempDoc = new XmlDocument { PreserveWhitespace = true };
+        //    var xadesElement = Xades132.BuildXadesObject( tempDoc, options.Certificate );
+        //    xadesElement.SetAttribute( "Target", "#" + sigId );
+
+        //    var signedPropsId = xadesElement
+        //        .SelectSingleNode( "//x132:SignedProperties/@Id", XmlNs.Manager )!.Value;
+
+        //    var xadesObject = new DataObject( "xades-object-" + Guid.NewGuid(), "", "", xadesElement );
+        //    signedXml.AddObject( xadesObject );
+
+        //    var xadesRef = new Reference( "#" + signedPropsId )
+        //    {
+        //        Type = "http://uri.etsi.org/01903#SignedProperties",
+        //        DigestMethod = digestMethod,
+        //    };
+
+        //    // XAdES spec (ETSI EN 319 132) recommends exclusive C14N for xades:SignedProperties
+        //    // to avoid inheriting ancestor namespace declarations that differ between signing
+        //    // and verification contexts.
+        //    xadesRef.AddTransform( CreateCanonicalizationTransform( XmlCanonicalization.XmlDsigExcC14NTransform ) );
+        //    signedXml.AddReference( xadesRef );
+        //}
+
+
+        /*
+         * 
+         */
         signedXml.ComputeSignature();
 
         return signedXml.GetXml();
     }
 
+
+    /// <summary />
+    private static Transform CreateCanonicalizationTransform( XmlCanonicalization canon )
+    {
+        return canon switch
+        {
+            XmlCanonicalization.XmlDsigC14NTransform => new XmlDsigC14NTransform(),
+            XmlCanonicalization.XmlDsigC14NWithCommentsTransform => new XmlDsigC14NWithCommentsTransform(),
+
+            XmlCanonicalization.XmlDsigC14N11Transform => new XmlDsigC14N11Transform(),
+            XmlCanonicalization.XmlDsigC14N11WithCommentsTransform => new XmlDsigC14N11WithCommentsTransform(),
+
+            XmlCanonicalization.XmlDsigExcC14NTransform => new XmlDsigExcC14NTransform(),
+            XmlCanonicalization.XmlDsigExcC14NWithCommentsTransform => new XmlDsigExcC14NWithCommentsTransform(),
+
+            _ => throw new NotSupportedException( $"Xml canonicalization '{canon}' is not supported" ),
+        };
+    }
 
 
     /// <summary>
