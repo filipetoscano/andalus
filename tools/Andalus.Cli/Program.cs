@@ -13,6 +13,7 @@ namespace Andalus.Cli;
 [Subcommand( typeof( CsrCommand ) )]
 [Subcommand( typeof( HashCommand ) )]
 [Subcommand( typeof( KeyCommand ) )]
+[Subcommand( typeof( UblCommand ) )]
 [Subcommand( typeof( XmlCommand ) )]
 [VersionOptionFromMember( MemberName = nameof( GetVersion ) )]
 public class Program
