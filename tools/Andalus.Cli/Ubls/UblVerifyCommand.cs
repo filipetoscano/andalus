@@ -7,17 +7,17 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using System.Xml;
 
-namespace Andalus.Cli.Xmls;
+namespace Andalus.Cli.Ubls;
 
 /// <summary />
 [Command( "verify", Description = "" )]
-public class XmlVerifyCommand
+public class UblVerifyCommand
 {
     private readonly ICryptoProvider _crypto;
 
 
     /// <summary />
-    public XmlVerifyCommand( ICryptoProvider cp )
+    public UblVerifyCommand( ICryptoProvider cp )
     {
         _crypto = cp;
     }
@@ -28,11 +28,6 @@ public class XmlVerifyCommand
     [Required]
     [FileExists]
     public string? InputPath { get; set; }
-
-    /// <summary />
-    [Option( "-c|--certificate", CommandOptionType.SingleValue, Description = "" )]
-    [FileExists]
-    public string? CertificatePath { get; set; }
 
     /// <summary />
     [Option( "-d|--detailed", CommandOptionType.NoValue, Description = "" )]
@@ -60,16 +55,7 @@ public class XmlVerifyCommand
         /*
          * 
          */
-        X509Certificate2? x509 = null;
-
-        if ( this.CertificatePath != null )
-            x509 = X509CertificateLoader.LoadCertificateFromFile( this.CertificatePath! );
-
-
-        /*
-         * 
-         */
-        var result = XmlDigSig.Verify( doc, x509 );
+        var result = XmlDigSig.Verify( doc );
 
         if ( this.InJson == true )
         {

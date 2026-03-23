@@ -5,6 +5,7 @@ namespace Andalus.Cli;
 /// <summary />
 [Command( "ubl", Description = "UBL XML operations" )]
 [Subcommand( typeof( Ubls.UblSignCommand ) )]
+[Subcommand( typeof( Ubls.UblVerifyCommand ) )]
 public class UblCommand
 {
     /// <summary />

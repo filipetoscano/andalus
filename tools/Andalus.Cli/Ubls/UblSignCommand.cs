@@ -41,6 +41,14 @@ public class UblSignCommand
     public string? InputPath { get; set; }
 
     /// <summary />
+    [Option( "-r|--role", CommandOptionType.SingleValue, Description = "" )]
+    public string? Role { get; set; }
+
+    /// <summary />
+    [Option( "-i|--id", CommandOptionType.SingleValue, Description = "" )]
+    public string? PartyId { get; set; }
+
+    /// <summary />
     [Option( "-o|--output", CommandOptionType.SingleValue, Description = "Output filename" )]
     public string? OutputPath { get; set; }
 
@@ -58,7 +66,10 @@ public class UblSignCommand
         /*
          * 
          */
-        var issuer = new UblExtensionPlacement( "Issuer", "9123456" );
+        var placement = new UblExtensionPlacement(
+            this.Role ?? "Issuer",
+            this.PartyId
+        );
 
 
         /*
@@ -71,7 +82,7 @@ public class UblSignCommand
             XadesCanonicalization = null,
             AddKeyInfo = KeyInfoPart.Certificate,
             Certificate = x509,
-            EnvelopedSignaturePlacement = issuer,
+            EnvelopedSignaturePlacement = placement,
         } );
 
 

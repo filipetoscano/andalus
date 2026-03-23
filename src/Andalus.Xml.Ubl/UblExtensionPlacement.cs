@@ -8,12 +8,12 @@ namespace Andalus.Xml.Ubl;
 public class UblExtensionPlacement : IEnvelopedSignaturePlacement
 {
     private readonly string _role;
-    private readonly string _partyIdentification;
+    private readonly string? _partyIdentification;
 
 
 
     /// <summary />
-    public UblExtensionPlacement( string role, string partyIdentification )
+    public UblExtensionPlacement( string role, string? partyIdentification = null )
     {
         _role = role;
         _partyIdentification = partyIdentification;
@@ -82,7 +82,11 @@ public class UblExtensionPlacement : IEnvelopedSignaturePlacement
          */
         var bodySig = (XmlElement) document.ImportNode( _bodySignature.Value, true );
         bodySig.Single( " cbc:ID " )!.InnerText = sigId;
-        bodySig.Single( " cac:SignatoryParty/cac:PartyIdentification/cbc:ID " )!.InnerText = _partyIdentification;
+
+        if ( _partyIdentification != null )
+            bodySig.Single( " cac:SignatoryParty/cac:PartyIdentification/cbc:ID " )!.InnerText = _partyIdentification;
+        else
+            bodySig.Remove( " cac:SignatoryParty " );
 
         var supplier = root.Single( " cac:AccountingSupplierParty " )!;
         root.InsertBefore( bodySig, supplier );

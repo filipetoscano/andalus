@@ -17,6 +17,13 @@ public class XmlDigSig
     }
 
 
+    /// <summary />
+    public static bool IsSigned( XmlDocument document )
+    {
+        return document.SelectSingleNode( " //ds:Signature ", XmlNs.Manager ) != null;
+    }
+
+
     /// <summary>
     /// Verifies all <c>&lt;Signature&gt;</c> elements in the document.
     /// Returns <c>true</c> if all signatures are valid.
