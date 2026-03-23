@@ -10,7 +10,7 @@ public class XmlDigSigOptions
     public SignatureProfile Profile { get; set; } = SignatureProfile.XmlDigSig;
 
     /// <summary />
-    public XmlCanonicalization Canonicalization { get; set; } = XmlCanonicalization.XmlDsigC14NTransform;
+    public XmlCanonicalization Canonicalization { get; set; } = XmlCanonicalization.XmlDsigExcC14NTransform;
 
     /// <summary />
     public XmlCanonicalization? XadesCanonicalization { get; set; }
