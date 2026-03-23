@@ -30,8 +30,7 @@ public class XmlDigSig
     /// </summary>
     public static bool VerifyAll( XmlDocument document )
     {
-        if ( document.PreserveWhitespace == false )
-            throw new InvalidOperationException( "Expected XML document to be initialized with PreserveWhitespace = true" );
+        Check( nameof( document ), document );
 
         var signatureNodes = document.SelectNodes( " //ds:Signature ", XmlNs.Manager );
 
@@ -60,8 +59,7 @@ public class XmlDigSig
     /// </summary>
     public static bool VerifyAll( XmlDocument document, X509Certificate2 certificate )
     {
-        if ( document.PreserveWhitespace == false )
-            throw new InvalidOperationException( "Expected XML document to be initialized with PreserveWhitespace = true" );
+        Check( nameof( document ), document );
 
         var signatureNodes = document.SelectNodes( " //ds:Signature ", XmlNs.Manager );
 
@@ -90,11 +88,8 @@ public class XmlDigSig
     /// </summary>
     public static bool VerifyDetached( XmlDocument document, XmlDocument detached )
     {
-        if ( document.PreserveWhitespace == false )
-            throw new InvalidOperationException( "Expected XML document to be initialized with PreserveWhitespace = true" );
-
-        if ( detached.PreserveWhitespace == false )
-            throw new InvalidOperationException( "Expected XML document to be initialized with PreserveWhitespace = true" );
+        Check( nameof( document ), document );
+        Check( nameof( detached ), detached );
 
 
         /*
@@ -121,11 +116,8 @@ public class XmlDigSig
     /// </summary>
     public static bool VerifyDetached( XmlDocument document, XmlDocument detached, X509Certificate2 certificate )
     {
-        if ( document.PreserveWhitespace == false )
-            throw new InvalidOperationException( "Expected XML document to be initialized with PreserveWhitespace = true" );
-
-        if ( detached.PreserveWhitespace == false )
-            throw new InvalidOperationException( "Expected XML document to be initialized with PreserveWhitespace = true" );
+        Check( nameof( document ), document );
+        Check( nameof( detached ), detached );
 
 
         /*
@@ -177,8 +169,7 @@ public class XmlDigSig
         HashAlgorithmName hashAlgorithm,
         XmlDigSigOptions? options = null )
     {
-        if ( document.PreserveWhitespace == false )
-            throw new InvalidOperationException( "Expected XML document to be initialized with PreserveWhitespace = true" );
+        Check( nameof( document ), document );
 
 
         /*
@@ -227,11 +218,7 @@ public class XmlDigSig
         HashAlgorithmName hashAlgorithm,
         XmlDigSigOptions? options = null )
     {
-        if ( document.PreserveWhitespace == false )
-            throw new InvalidOperationException( "Expected XML document to be initialized with PreserveWhitespace = true" );
-
-        if ( document.DocumentElement == null )
-            throw new InvalidOperationException( "Expected XML document to have a document element" );
+        Check( nameof( document ), document );
 
 
         /*
@@ -245,7 +232,7 @@ public class XmlDigSig
         signedXml.SafeCanonicalizationMethods.Add( SignedXml.XmlDsigXPathTransformUrl );
 
         string objectId = "signed-" + Guid.NewGuid().ToString();
-        var dataObject = new DataObject( objectId, "", "", (XmlElement) doc.ImportNode( document.DocumentElement, true ) );
+        var dataObject = new DataObject( objectId, "", "", (XmlElement) doc.ImportNode( document.DocumentElement!, true ) );
         signedXml.AddObject( dataObject );
 
 
@@ -277,8 +264,7 @@ public class XmlDigSig
         HashAlgorithmName hashAlgorithm,
         XmlDigSigOptions? options = null )
     {
-        if ( document.PreserveWhitespace == false )
-            throw new InvalidOperationException( "Expected XML document to be initialized with PreserveWhitespace = true" );
+        Check( nameof( document ), document );
 
 
         /*
@@ -525,5 +511,13 @@ public class XmlDigSig
                 _ => throw new NotSupportedException( $"Hash algorithm '{hashAlgorithm.Name}' is not supported." ),
             };
         }
+    }
+
+
+    /// <summary />
+    private static void Check( string paramName, XmlDocument document )
+    {
+        if ( document.PreserveWhitespace == false )
+            throw new ArgumentException( "Expected XML document to be initialized with PreserveWhitespace = true", paramName );
     }
 }
