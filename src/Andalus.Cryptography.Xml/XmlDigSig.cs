@@ -24,6 +24,58 @@ public class XmlDigSig
     }
 
 
+    /// <summary />
+    public static List<VerifyResult> Verify( XmlDocument document, X509Certificate2? certificate = null )
+    {
+        Check( nameof( document ), document );
+
+        var results = new List<VerifyResult>();
+
+        foreach ( XmlElement signatureElement in document.SelectNodes( " //ds:Signature ", XmlNs.Manager )! )
+        {
+            var signedXml = new AndalusSignedXml( document );
+            signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11Transform.AlgorithmUri );
+            signedXml.SafeCanonicalizationMethods.Add( XmlDsigC14N11WithCommentsTransform.AlgorithmUri );
+            signedXml.SafeCanonicalizationMethods.Add( SignedXml.XmlDsigXPathTransformUrl );
+
+            signedXml.LoadXml( signatureElement );
+
+
+            /*
+             * 
+             */
+            var refUri = signatureElement.SelectSingleNode( " ds:SignedInfo/ds:Reference/@URI ", XmlNs.Manager )!.InnerText;
+
+
+            /*
+             * 
+             */
+            var cerElem = signatureElement.SelectSingleNode( " ds:KeyInfo/ds:X509Data/ds:X509Certificate ", XmlNs.Manager );
+            var hasCert = cerElem != null;
+
+
+            /*
+             * 
+             */
+            bool isValid;
+
+            if ( hasCert == false && certificate != null )
+                isValid = signedXml.CheckSignature( certificate, true );
+            else
+                isValid = signedXml.CheckSignature();
+
+            results.Add( new VerifyResult()
+            {
+                Id = signatureElement.GetAttribute( "Id" ),
+                IsValid = isValid,
+                SignatureElement = signatureElement,
+            } );
+        }
+
+        return results;
+    }
+
+
     /// <summary>
     /// Verifies all <c>&lt;Signature&gt;</c> elements in the document.
     /// Returns <c>true</c> if all signatures are valid.
