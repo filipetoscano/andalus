@@ -44,9 +44,11 @@ public class Xades132Tests
 
     /// <summary />
     [Theory]
-    [InlineData( XmlCanonicalization.XmlDsigC14NTransform )]
-    [InlineData( XmlCanonicalization.XmlDsigExcC14NTransform )]
-    public void Enveloped_Ok( XmlCanonicalization canon )
+    [InlineData( XmlCanonicalization.XmlDsigC14NTransform, null )]
+    [InlineData( XmlCanonicalization.XmlDsigC14NTransform, XmlCanonicalization.XmlDsigC14NTransform )]
+    [InlineData( XmlCanonicalization.XmlDsigExcC14NTransform, null )]
+    [InlineData( XmlCanonicalization.XmlDsigExcC14NTransform, XmlCanonicalization.XmlDsigC14NTransform )]
+    public void Enveloped_Ok( XmlCanonicalization canon, XmlCanonicalization? xades )
     {
         var b = _f.Get( KeyType.EcdsaP256 );
 
@@ -56,6 +58,7 @@ public class Xades132Tests
         var options = new XmlDigSigOptions
         {
             Canonicalization = canon,
+            XadesCanonicalization = xades,
             Profile = SignatureProfile.Xades132,
             Certificate = b.Certificate,
             AddKeyInfo = KeyInfoPart.Certificate,

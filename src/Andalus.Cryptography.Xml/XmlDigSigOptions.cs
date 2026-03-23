@@ -13,6 +13,9 @@ public class XmlDigSigOptions
     public XmlCanonicalization Canonicalization { get; set; } = XmlCanonicalization.XmlDsigC14NTransform;
 
     /// <summary />
+    public XmlCanonicalization? XadesCanonicalization { get; set; }
+
+    /// <summary />
     public X509Certificate2? Certificate { get; set; }
 
     /// <summary />

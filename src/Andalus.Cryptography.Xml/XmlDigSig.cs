@@ -377,7 +377,7 @@ public class XmlDigSig
         // XAdES spec (ETSI EN 319 132) recommends exclusive C14N for xades:SignedProperties
         // to avoid inheriting ancestor namespace declarations that differ between signing
         // and verification contexts.
-        xadesRef.AddTransform( CreateCanonicalizationTransform( XmlCanonicalization.XmlDsigExcC14NTransform ) );
+        xadesRef.AddTransform( CreateCanonicalizationTransform( options?.XadesCanonicalization ?? XmlCanonicalization.XmlDsigExcC14NTransform ) );
         signedXml.AddReference( xadesRef );
     }
 
@@ -405,42 +405,6 @@ public class XmlDigSig
             reference.DigestMethod = digestMethod;
 
         AddKeyInfo( signedXml, options );
-
-
-        /*
-         * XAdES 1.3.2
-         * Add QualifyingProperties as a ds:Object and reference to xades:SignedProperties
-         */
-        //if ( options?.Profile == SignatureProfile.Xades132 )
-        //{
-        //    if ( options.Certificate is null )
-        //        throw new InvalidOperationException( "Certificate is required for XAdES 1.3.2 profile." );
-
-        //    var sigId = "sig-" + Guid.NewGuid().ToString();
-        //    signedXml.Signature.Id = sigId;
-
-        //    var tempDoc = new XmlDocument { PreserveWhitespace = true };
-        //    var xadesElement = Xades132.BuildXadesObject( tempDoc, options.Certificate );
-        //    xadesElement.SetAttribute( "Target", "#" + sigId );
-
-        //    var signedPropsId = xadesElement
-        //        .SelectSingleNode( "//x132:SignedProperties/@Id", XmlNs.Manager )!.Value;
-
-        //    var xadesObject = new DataObject( "xades-object-" + Guid.NewGuid(), "", "", xadesElement );
-        //    signedXml.AddObject( xadesObject );
-
-        //    var xadesRef = new Reference( "#" + signedPropsId )
-        //    {
-        //        Type = "http://uri.etsi.org/01903#SignedProperties",
-        //        DigestMethod = digestMethod,
-        //    };
-
-        //    // XAdES spec (ETSI EN 319 132) recommends exclusive C14N for xades:SignedProperties
-        //    // to avoid inheriting ancestor namespace declarations that differ between signing
-        //    // and verification contexts.
-        //    xadesRef.AddTransform( CreateCanonicalizationTransform( XmlCanonicalization.XmlDsigExcC14NTransform ) );
-        //    signedXml.AddReference( xadesRef );
-        //}
 
 
         /*
