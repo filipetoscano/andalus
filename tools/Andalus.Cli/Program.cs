@@ -103,6 +103,12 @@ public class Program
 
             return 2;
         }
+        catch ( CommandParsingException ex )
+        {
+            Console.WriteLine( "err: " + ex.Message );
+
+            return 2;
+        }
         catch ( Exception ex )
         {
             Console.WriteLine( "ftl: unhandled exception during execution" );
