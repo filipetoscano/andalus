@@ -25,11 +25,11 @@ public class XmlDigSig
 
 
     /// <summary />
-    public static List<VerifyResult> Verify( XmlDocument document, X509Certificate2? certificate = null )
+    public static VerifyResult Verify( XmlDocument document, X509Certificate2? certificate = null )
     {
         Check( nameof( document ), document );
 
-        var results = new List<VerifyResult>();
+        var sigs = new List<VerifySignatureResult>();
 
         foreach ( XmlElement signatureElement in document.SelectNodes( " //ds:Signature ", XmlNs.Manager )! )
         {
@@ -64,7 +64,7 @@ public class XmlDigSig
             else
                 isValid = signedXml.CheckSignature();
 
-            results.Add( new VerifyResult()
+            sigs.Add( new VerifySignatureResult()
             {
                 Id = signatureElement.GetAttribute( "Id" ),
                 IsValid = isValid,
@@ -72,7 +72,18 @@ public class XmlDigSig
             } );
         }
 
-        return results;
+
+        /*
+         * 
+         */
+        var areValid = sigs.All( x => x.IsValid == true );
+
+        return new VerifyResult()
+        {
+            IsValid = true,
+            HasSignatures = sigs.Count > 0,
+            Signatures = sigs,
+        };
     }
 
 

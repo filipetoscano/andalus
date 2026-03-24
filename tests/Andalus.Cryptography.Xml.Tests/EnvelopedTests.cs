@@ -162,8 +162,8 @@ public class EnvelopedTests
         /*
          * 
          */
-        bool isValid = XmlDigSig.VerifyAll( second );
+        var result = XmlDigSig.Verify( second );
 
-        Assert.True( isValid );
+        Assert.True( result.IsValid );
     }
 }

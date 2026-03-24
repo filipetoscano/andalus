@@ -65,7 +65,7 @@ public class UblVerifyCommand
             } );
 
             Console.WriteLine( json );
-            return ( result.All( x => x.IsValid == true ) == true ) ? 1 : 0;
+            return ( result.IsValid == true ) ? 1 : 0;
         }
 
 
@@ -81,7 +81,7 @@ public class UblVerifyCommand
             table.AddColumn( "Ref" );
             table.AddColumn( "Digest" );
 
-            foreach ( var row in result )
+            foreach ( var row in result.Signatures )
             {
                 table.AddRow(
                     new Markup( row.IsValid ? "[green]ok[/]" : "[red]nok[/]" ),
@@ -98,7 +98,7 @@ public class UblVerifyCommand
         /*
          * 
          */
-        var isOk = result.All( x => x.IsValid == true );
+        var isOk = result.IsValid;
 
         if ( isOk == false )
         {

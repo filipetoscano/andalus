@@ -79,7 +79,7 @@ public class XmlVerifyCommand
             } );
 
             Console.WriteLine( json );
-            return ( result.All( x => x.IsValid == true ) == true ) ? 1 : 0;
+            return result.IsValid == true ? 0 : 1;
         }
 
 
@@ -95,7 +95,7 @@ public class XmlVerifyCommand
             table.AddColumn( "Ref" );
             table.AddColumn( "Digest" );
 
-            foreach ( var row in result )
+            foreach ( var row in result.Signatures )
             {
                 table.AddRow(
                     new Markup( row.IsValid ? "[green]ok[/]" : "[red]nok[/]" ),
@@ -112,7 +112,7 @@ public class XmlVerifyCommand
         /*
          * 
          */
-        var isOk = result.All( x => x.IsValid == true );
+        var isOk = result.IsValid;
 
         if ( isOk == false )
         {

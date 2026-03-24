@@ -22,6 +22,54 @@ public class XmlDigSigTests
 
 
     /// <summary />
+    [Fact]
+    public void IsSigned()
+    {
+        var doc = new XmlDocument() { PreserveWhitespace = true };
+        doc.LoadXml( @"<root></root>" );
+
+        Assert.False( XmlDigSig.IsSigned( doc ) );
+
+
+        /*
+         * 
+         */
+        var b = _f.Get( KeyType.Rsa2048 );
+
+        var signed = XmlDigSig.Sign( SignatureType.Enveloping, doc, _cp, b.KeyReference, HashAlgorithmName.SHA256, new XmlDigSigOptions()
+        {
+        } );
+
+        Assert.True( XmlDigSig.IsSigned( signed ) );
+    }
+
+
+    /// <summary />
+    [Theory]
+    [InlineData( SignatureType.Enveloped )]
+    [InlineData( SignatureType.Enveloping )]
+    [InlineData( SignatureType.Detached )]
+    public void RequiresPreserveWhitespace( SignatureType signatureType )
+    {
+        var doc = new XmlDocument() { PreserveWhitespace = false };
+        doc.LoadXml( @"<root></root>" );
+
+
+        /*
+         * 
+         */
+        var b = _f.Get( KeyType.Rsa2048 );
+
+        var ex = Assert.Throws<ArgumentException>( () =>
+        {
+            XmlDigSig.Sign( signatureType, doc, _cp, b.KeyReference, HashAlgorithmName.SHA256, new XmlDigSigOptions()
+            {
+            } );
+        } );
+    }
+
+
+    /// <summary />
     [Theory]
     [InlineData( XmlCanonicalization.XmlDsigC14NTransform )]
     [InlineData( XmlCanonicalization.XmlDsigC14NWithCommentsTransform )]
