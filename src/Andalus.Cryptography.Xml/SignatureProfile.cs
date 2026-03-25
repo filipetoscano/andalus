@@ -8,4 +8,7 @@ public enum SignatureProfile
 
     /// <summary />
     Xades132,
+
+    /// <summary />
+    Xades141,
 }

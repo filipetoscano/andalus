@@ -259,10 +259,12 @@ public class XmlDigSig
 
         if ( options?.Profile == SignatureProfile.Xades132 )
             AddXadesReference( signedXml, hashAlgorithm, options );
+        else if ( options?.Profile == SignatureProfile.Xades141 )
+            AddXades141Reference( signedXml, hashAlgorithm, options );
 
 
         /*
-         * 
+         *
          */
         var xmlSig = ComputeSignature( signedXml, provider, key, hashAlgorithm, options );
         var docSig = (XmlElement) document.ImportNode( xmlSig, true );
@@ -307,10 +309,12 @@ public class XmlDigSig
 
         if ( options?.Profile == SignatureProfile.Xades132 )
             AddXadesReference( signedXml, hashAlgorithm, options );
+        else if ( options?.Profile == SignatureProfile.Xades141 )
+            AddXades141Reference( signedXml, hashAlgorithm, options );
 
 
         /*
-         * 
+         *
          */
         var xmlSig = ComputeSignature( signedXml, provider, key, hashAlgorithm, options );
         doc.AppendChild( doc.ImportNode( xmlSig, true ) );
@@ -347,10 +351,12 @@ public class XmlDigSig
 
         if ( options?.Profile == SignatureProfile.Xades132 )
             AddXadesReference( signedXml, hashAlgorithm, options );
+        else if ( options?.Profile == SignatureProfile.Xades141 )
+            AddXades141Reference( signedXml, hashAlgorithm, options );
 
 
         /*
-         * 
+         *
          */
         var signature = ComputeSignature( signedXml, provider, key, hashAlgorithm, options );
 
@@ -433,6 +439,36 @@ public class XmlDigSig
         // XAdES spec (ETSI EN 319 132) recommends exclusive C14N for xades:SignedProperties
         // to avoid inheriting ancestor namespace declarations that differ between signing
         // and verification contexts.
+        xadesRef.AddTransform( CreateCanonicalizationTransform( options?.XadesCanonicalization ?? XmlCanonicalization.XmlDsigExcC14NTransform ) );
+        signedXml.AddReference( xadesRef );
+    }
+
+
+    /// <summary />
+    private static void AddXades141Reference( SignedXml signedXml, HashAlgorithmName hashAlgorithm, XmlDigSigOptions? options )
+    {
+        if ( options?.Certificate is null )
+            throw new InvalidOperationException( "Certificate is required for XAdES 1.4.1 profile." );
+
+        var sigId = "sig-" + Guid.NewGuid().ToString();
+        signedXml.Signature.Id = sigId;
+
+        var tempDoc = new XmlDocument { PreserveWhitespace = true };
+        var xadesElement = Xades141.BuildXadesObject( tempDoc, options.Certificate );
+        xadesElement.SetAttribute( "Target", "#" + sigId );
+
+        var signedPropsId = xadesElement
+            .SelectSingleNode( "//x132:SignedProperties/@Id", XmlNs.Manager )!.Value;
+
+        var xadesObject = new DataObject( "xades-object-" + Guid.NewGuid(), "", "", xadesElement );
+        signedXml.AddObject( xadesObject );
+
+        var xadesRef = new Reference( "#" + signedPropsId )
+        {
+            Type = "http://uri.etsi.org/01903#SignedProperties",
+            DigestMethod = ToDigestMethod( hashAlgorithm ),
+        };
+
         xadesRef.AddTransform( CreateCanonicalizationTransform( options?.XadesCanonicalization ?? XmlCanonicalization.XmlDsigExcC14NTransform ) );
         signedXml.AddReference( xadesRef );
     }

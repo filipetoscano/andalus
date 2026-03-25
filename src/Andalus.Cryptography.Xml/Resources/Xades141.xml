@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<xades:QualifyingProperties xmlns:xades="http://uri.etsi.org/01903/v1.3.2#" xmlns:xades141="http://uri.etsi.org/01903/v1.4.1#" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns="">
+  <xades:SignedProperties Id="{Id}">
+    <xades:SignedSignatureProperties>
+      <xades:SigningTime>{DateTime.UtcNow}</xades:SigningTime>
+      <xades141:SigningCertificateV2>
+        <xades141:Cert>
+          <xades141:CertDigestV2>
+            <ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256" />
+            <ds:DigestValue>{RawData}</ds:DigestValue>
+          </xades141:CertDigestV2>
+          <xades141:IssuerSerialV2>{IssuerSerialV2}</xades141:IssuerSerialV2>
+        </xades141:Cert>
+      </xades141:SigningCertificateV2>
+    </xades:SignedSignatureProperties>
+  </xades:SignedProperties>
+</xades:QualifyingProperties>
