@@ -1,4 +1,7 @@
-﻿using Andalus.Cryptography;
+﻿using Amazon;
+using Amazon.KeyManagementService;
+using Andalus.Cryptography;
+using Andalus.Cryptography.AwsKms;
 using Andalus.Cryptography.BouncyHsm;
 using Andalus.Cryptography.KeyVault;
 using McMaster.Extensions.CommandLineUtils;
@@ -60,6 +63,20 @@ public class Program
                 return new KeyVaultCryptoProvider( new KeyVaultCryptoProviderOptions()
                 {
                     VaultId = new Uri( kvid ),
+                } );
+            }
+            else if ( prov == "awskms" )
+            {
+                var profileName = Environment.GetEnvironmentVariable( "ANDALUS_AWS_PROFILE" ) ?? throw new ApplicationException( "Missing ANDALUS_AWS_PROFILE" );
+
+                var chain = new Amazon.Runtime.CredentialManagement.CredentialProfileStoreChain();
+                chain.TryGetAWSCredentials( profileName, out var credentials );
+
+                var client = new AmazonKeyManagementServiceClient( credentials );
+
+                return new AwsKmsCryptoProvider( new AwsKmsCryptoProviderOptions()
+                {
+                    KmsClient = client,
                 } );
             }
             else
