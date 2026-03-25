@@ -72,9 +72,30 @@ public class AwsKmsCryptoProvider : ICryptoProvider
 
 
     /// <inheritdoc />
-    public Task<RemoveResult> RemoveKeyPairAsync( KeyReference key, CancellationToken cancellationToken = default )
+    public async Task<RemoveResult> RemoveKeyPairAsync( KeyReference key, CancellationToken cancellationToken = default )
     {
-        throw new NotImplementedException();
+        var request = new ScheduleKeyDeletionRequest
+        {
+            KeyId = key.KeyId,
+            PendingWindowInDays = 7,
+        };
+
+        try
+        {
+            var response = await _kms.ScheduleKeyDeletionAsync( request, cancellationToken );
+
+            // TODO: Use response.DeletionDate
+            return new RemoveResult();
+        }
+        catch ( NotFoundException )
+        {
+            // TODO: Throw KeyNotFound
+            throw;
+        }
+        catch ( KMSInvalidStateException ex )
+        {
+            throw new InvalidOperationException( "Key is already pending deletion, or disabled", ex );
+        }
     }
 
 

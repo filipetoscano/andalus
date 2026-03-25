@@ -8,19 +8,17 @@ internal class TestConfig
     {
         get
         {
-            return Environment.GetEnvironmentVariable( "AWS_KMS" ) != null;
+            return Environment.GetEnvironmentVariable( "AWS_PROFILE" ) != null;
         }
     }
 
 
     /// <summary />
-    internal static Uri VaultId
+    internal static string ProfileName
     {
         get
         {
-            var url = Environment.GetEnvironmentVariable( "AWS_KMS" ) ?? throw new InvalidOperationException();
-
-            return new Uri( url );
+            return Environment.GetEnvironmentVariable( "AWS_PROFILE" ) ?? throw new InvalidOperationException();
         }
     }
 }
