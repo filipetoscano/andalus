@@ -4,6 +4,9 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+
+    <IsPackable>true</IsPackable>
+    <PackageDescription>XML Digital Signature (XmlDSig) and XAdES support for Andalus, enabling enveloped, enveloping, and detached signatures via any ICryptoProvider backend.</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>

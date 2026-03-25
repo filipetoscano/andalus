@@ -41,5 +41,21 @@ echo ${VERSION}
 dotnet clean   -c Release
 dotnet restore --packages .nuget
 dotnet build   -c Release --no-restore -p:Version=${VERSION}
+dotnet test    -c Release --no-restore --no-build --verbosity=normal
+
+
+#
+# Publish to nuget.org
+# ------------------------------------------------------------------------
+
+mkdir -p nupkg
+rm -f nupkg/*.*
+
+dotnet pack    -c Release --no-restore --no-build src/Andalus.Cryptography           -o nupkg -p:Version=${VERSION}
+dotnet pack    -c Release --no-restore --no-build src/Andalus.Cryptography.AwsKms    -o nupkg -p:Version=${VERSION}
+dotnet pack    -c Release --no-restore --no-build src/Andalus.Cryptography.KeyVault  -o nupkg -p:Version=${VERSION}
+dotnet pack    -c Release --no-restore --no-build src/Andalus.Cryptography.Xml       -o nupkg -p:Version=${VERSION}
+
+dotnet nuget push "nupkg/*.nupkg" --api-key ${NUGET_APIKEY} --source=https://api.nuget.org/v3/index.json
 
 # eof

@@ -4,6 +4,9 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Azure Key Vault provider for Andalus, enabling RSA and ECDSA signing operations backed by Azure Key Vault keys.</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>

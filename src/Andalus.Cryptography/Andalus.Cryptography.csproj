@@ -4,6 +4,9 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Core HSM abstraction with software-backed implementations (memory and file key stores) and certificate (X509/CSR) signing.</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>

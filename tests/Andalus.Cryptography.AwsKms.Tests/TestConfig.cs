@@ -1,4 +1,4 @@
-﻿namespace Andalus.Cryptography.KeyVault.Tests;
+﻿namespace Andalus.Cryptography.AwsKms.Tests;
 
 /// <summary />
 internal class TestConfig
@@ -8,7 +8,7 @@ internal class TestConfig
     {
         get
         {
-            return Environment.GetEnvironmentVariable( "AZURE_KEYVAULT" ) != null;
+            return Environment.GetEnvironmentVariable( "AWS_KMS" ) != null;
         }
     }
 
@@ -18,7 +18,7 @@ internal class TestConfig
     {
         get
         {
-            var url = Environment.GetEnvironmentVariable( "AZURE_KEYVAULT" ) ?? throw new InvalidOperationException();
+            var url = Environment.GetEnvironmentVariable( "AWS_KMS" ) ?? throw new InvalidOperationException();
 
             return new Uri( url );
         }
