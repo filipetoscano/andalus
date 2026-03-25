@@ -64,15 +64,6 @@ internal sealed class HsmEcdsa : ECDsa
 
 
     /// <inheritdoc />
-    /// <remarks>
-    /// SignedXml will calcualte the digest internally, and then call the
-    /// SignHash method directly. Remove this code.
-    /// </remarks>
-    protected override byte[] HashData( Stream data, HashAlgorithmName hashAlgorithm )
-        => throw new NotSupportedException();
-
-
-    /// <inheritdoc />
     public override ECParameters ExportParameters( bool includePrivateParameters )
         => throw new NotSupportedException( "HSM keys are not exportable." );
 
