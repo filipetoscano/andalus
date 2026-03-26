@@ -1,5 +1,6 @@
 ﻿using Andalus.Cryptography;
 using McMaster.Extensions.CommandLineUtils;
+using Spectre.Console;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Cryptography;
 
@@ -51,11 +52,11 @@ public class KeyVerifyCommand
 
         if ( isValid == false )
         {
-            Console.WriteLine( "not ok" );
+            AnsiConsole.MarkupLine( "[red]nok[/]: signature is invalid" );
             return 1;
         }
 
-        Console.WriteLine( "ok" );
+        AnsiConsole.MarkupLine( "[green]ok[/]: signature is valid" );
         return 0;
     }
 }
