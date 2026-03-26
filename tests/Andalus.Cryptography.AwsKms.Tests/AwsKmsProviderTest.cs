@@ -1,5 +1,6 @@
 ﻿using Amazon;
 using Amazon.KeyManagementService;
+using System.Reflection;
 using System.Security.Cryptography;
 
 namespace Andalus.Cryptography.AwsKms.Tests;
@@ -87,5 +88,64 @@ public class AwsKmsProviderTest : IClassFixture<Fixture>
 
         if ( r.CompleteAsync != null )
             await r.CompleteAsync;
+    }
+
+
+    /// <summary />
+    [Theory]
+    [InlineData( (KeyType) 0 )]
+    [InlineData( (KeyType) 900 )]
+    public void MapKeyTypeThrowsOnInvalid( KeyType keyType )
+    {
+        KeySpec Invoke( KeyType keyType )
+        {
+            var method = typeof( AwsKmsCryptoProvider ).GetMethod(
+                "MapKeyType",
+                BindingFlags.NonPublic | BindingFlags.Static );
+
+            try
+            {
+                return (KeySpec) method!.Invoke( null, new object[] { keyType } )!;
+            }
+            catch ( TargetInvocationException ex )
+            {
+                throw ex.InnerException!;
+            }
+        }
+
+        Assert.Throws<NotSupportedException>( () => Invoke( keyType ) );
+    }
+
+
+    /// <summary />
+    [Theory]
+    [InlineData( KeyType.EcdsaP256, "SHA3_256" )]
+    [InlineData( KeyType.EcdsaP256, "SHA3_384" )]
+    [InlineData( KeyType.EcdsaP256, "SHA3_512" )]
+    [InlineData( KeyType.EcdsaP256, "MD5" )]
+    [InlineData( KeyType.Rsa2048, "SHA3_256" )]
+    [InlineData( KeyType.Rsa2048, "SHA3_384" )]
+    [InlineData( KeyType.Rsa2048, "SHA3_512" )]
+    [InlineData( KeyType.Rsa2048, "MD5" )]
+    public void MapSigningAlgorithmThrowsOnInvalid( KeyType keyType, string name )
+    {
+        SigningAlgorithmSpec Invoke( KeyType keyType, HashAlgorithmName hashAlgorithm )
+        {
+            var method = typeof( AwsKmsCryptoProvider ).GetMethod(
+                "MapSigningAlgorithm",
+                BindingFlags.NonPublic | BindingFlags.Static );
+
+            try
+            {
+                return (SigningAlgorithmSpec) method!.Invoke( null, new object[] { keyType, hashAlgorithm } )!;
+            }
+            catch ( TargetInvocationException ex )
+            {
+                throw ex.InnerException!;
+            }
+        }
+
+        var han = new HashAlgorithmName( name );
+        Assert.Throws<NotSupportedException>( () => Invoke( keyType, han ) );
     }
 }

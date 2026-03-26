@@ -1,5 +1,7 @@
 ﻿using Amazon.KeyManagementService;
 using Amazon.KeyManagementService.Model;
+using Org.BouncyCastle.Crypto.Engines;
+using Org.BouncyCastle.Crypto.Parameters;
 using System.Security.Cryptography;
 
 namespace Andalus.Cryptography.AwsKms;
@@ -65,9 +67,185 @@ public class AwsKmsCryptoProvider : ICryptoProvider
 
 
     /// <inheritdoc />
-    public Task<KeyReference> ImportKeyPairAsync( KeyCreationOptions options, KeyPair keyPair, CancellationToken cancellationToken = default )
+    public async Task<KeyReference> ImportKeyPairAsync(
+        KeyCreationOptions options,
+        KeyPair keyPair,
+        CancellationToken cancellationToken = default )
     {
-        throw new NotImplementedException();
+        var keySpec = MapKeyType( options.KeyType );
+        var family = options.KeyType.Family();
+
+
+        /*
+         * #1. Create an empty key shell with EXTERNAL origin
+         */
+        var createResponse = await _kms.CreateKeyAsync( new CreateKeyRequest
+        {
+            KeySpec = keySpec,
+            KeyUsage = KeyUsageType.SIGN_VERIFY,
+            Origin = OriginType.EXTERNAL,
+            Description = options.KeyName,
+            Tags = options.Tags
+                .Select( kv => new Tag { TagKey = kv.Key, TagValue = kv.Value } )
+                .ToList(),
+        }, cancellationToken );
+
+        var keyId = createResponse.KeyMetadata.KeyId;
+        var keyArn = createResponse.KeyMetadata.Arn;
+
+        try
+        {
+            await _kms.CreateAliasAsync( new CreateAliasRequest
+            {
+                AliasName = $"alias/{options.KeyName}",
+                TargetKeyId = keyId,
+            }, cancellationToken );
+
+
+            /*
+             * #2. Get wrapping parameters.
+             * ECDSA keys are small enough to wrap directly with RSAES_OAEP_SHA_256.
+             * RSA private keys exceed the OAEP payload limit and require the two-layer
+             * RSA_AES_KEY_WRAP scheme.
+             */
+            var wrappingAlgorithm = family == KeyFamily.Rsa
+                ? AlgorithmSpec.RSA_AES_KEY_WRAP_SHA_256
+                : AlgorithmSpec.RSAES_OAEP_SHA_256;
+
+            var paramsResponse = await _kms.GetParametersForImportAsync( new GetParametersForImportRequest
+            {
+                KeyId = keyId,
+                WrappingAlgorithm = wrappingAlgorithm,
+                WrappingKeySpec = WrappingKeySpec.RSA_4096,
+            }, cancellationToken );
+
+            var wrappingPublicKeyDer = paramsResponse.PublicKey.ToArray();
+            var importToken = paramsResponse.ImportToken.ToArray();
+
+
+            /*
+             * #3. Convert private key PEM to PKCS#8 DER (format KMS requires).
+             * EC keys are stored as SEC1 ("EC PRIVATE KEY"); RSA as PKCS#1 ("RSA PRIVATE KEY").
+             */
+            var pkcs8 = ToPkcs8Der( keyPair, family );
+
+
+            /*
+             * #4. Wrap key material
+             */
+            var wrappedKey = family == KeyFamily.Rsa
+                ? WrapRsaKeyMaterial( pkcs8, wrappingPublicKeyDer )
+                : WrapEcKeyMaterial( pkcs8, wrappingPublicKeyDer );
+
+
+            /*
+             * #5. — Import
+             */
+            await _kms.ImportKeyMaterialAsync( new ImportKeyMaterialRequest
+            {
+                KeyId = keyId,
+                ImportToken = new MemoryStream( importToken ),
+                EncryptedKeyMaterial = new MemoryStream( wrappedKey ),
+                ExpirationModel = ExpirationModelType.KEY_MATERIAL_DOES_NOT_EXPIRE,
+            }, cancellationToken );
+
+            return new KeyReference()
+            {
+                KeyId = keyArn,
+                KeyType = options.KeyType,
+            };
+        }
+        catch
+        {
+            // Delete the empty shell so it does not litter the account
+            try
+            {
+                await _kms.ScheduleKeyDeletionAsync( new ScheduleKeyDeletionRequest
+                {
+                    KeyId = keyId,
+                    PendingWindowInDays = 7,
+                }, CancellationToken.None );
+            }
+            catch
+            {
+                // Ignore
+            }
+
+            throw;
+        }
+    }
+
+
+    /// <summary>
+    /// Converts the private key PEM in <paramref name="keyPair"/> to unencrypted PKCS#8 DER,
+    /// the format AWS KMS requires for import.
+    /// </summary>
+    private static byte[] ToPkcs8Der( KeyPair keyPair, KeyFamily family )
+    {
+        if ( family == KeyFamily.Ecdsa )
+        {
+            using var ecdsa = ECDsa.Create();
+            ecdsa.ImportECPrivateKey( keyPair.GetPrivateKeyBytes(), out _ );
+
+            return ecdsa.ExportPkcs8PrivateKey();
+        }
+        else
+        {
+            using var rsa = RSA.Create();
+            rsa.ImportRSAPrivateKey( keyPair.GetPrivateKeyBytes(), out _ );
+
+            return rsa.ExportPkcs8PrivateKey();
+        }
+    }
+
+
+    /// <summary>
+    /// ECDSA path: encrypts PKCS#8 DER directly with RSA-OAEP-SHA256
+    /// using the KMS-provided wrapping public key.
+    /// </summary>
+    private static byte[] WrapEcKeyMaterial( byte[] pkcs8, byte[] wrappingPublicKeyDer )
+    {
+        using var rsa = RSA.Create();
+        rsa.ImportSubjectPublicKeyInfo( wrappingPublicKeyDer, out _ );
+
+        return rsa.Encrypt( pkcs8, RSAEncryptionPadding.OaepSHA256 );
+    }
+
+
+    /// <summary>
+    /// RSA path: two-layer wrap.
+    /// 1. Generate an ephemeral AES-256 key.
+    /// 2. Wrap PKCS#8 DER with AES Key Wrap + Padding (RFC 5649).
+    /// 3. Encrypt the AES key with the KMS wrapping public key via RSA-OAEP-SHA256.
+    /// 4. Return: [encrypted AES key][AES-wrapped key material].
+    /// </summary>
+    private static byte[] WrapRsaKeyMaterial( byte[] pkcs8, byte[] wrappingPublicKeyDer )
+    {
+        var aesKey = RandomNumberGenerator.GetBytes( 32 );
+
+        try
+        {
+            using var rsa = RSA.Create();
+            rsa.ImportSubjectPublicKeyInfo( wrappingPublicKeyDer, out _ );
+
+            var encryptedAesKey = rsa.Encrypt( aesKey, RSAEncryptionPadding.OaepSHA256 );
+
+            // RFC 5649 handles arbitrary-length input (PKCS#8 is not guaranteed 8-byte aligned)
+            var engine = new AesWrapPadEngine();
+            engine.Init( true, new KeyParameter( aesKey ) );
+
+            var wrappedKeyMaterial = engine.Wrap( pkcs8, 0, pkcs8.Length );
+
+            var result = new byte[ encryptedAesKey.Length + wrappedKeyMaterial.Length ];
+            encryptedAesKey.CopyTo( result, 0 );
+            wrappedKeyMaterial.CopyTo( result, encryptedAesKey.Length );
+
+            return result;
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory( aesKey );
+        }
     }
 
 
