@@ -27,6 +27,10 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
+  
+  <PropertyGroup Condition=" '$(IsPackable)' == 'true' ">
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
 
   <ItemGroup Condition=" '$(IsPackable)' == 'true' ">
     <None Include="$(MSBuildThisFileDirectory)docs\img\icon.png">
@@ -34,6 +38,8 @@
       <PackagePath>/$(PackageIcon)</PackagePath>
       <Visible>false</Visible>
     </None>
+
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>
