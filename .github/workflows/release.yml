@@ -12,6 +12,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     environment: release
+
+    permissions:
+      id-token: write
+
     steps:
       - uses: actions/checkout@v6
 
@@ -27,8 +31,14 @@ jobs:
             .nuget
           key: nuget
 
+      - name: NuGet login (OIDC → temp API key)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
       - name: Run release.sh
         run: ./cicd/release.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NUGET_APIKEY: ${{ secrets.NUGET_APIKEY }}
+          NUGET_APIKEY: ${{ steps.login.outputs.NUGET_API_KEY }}
