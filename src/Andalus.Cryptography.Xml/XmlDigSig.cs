@@ -80,7 +80,7 @@ public class XmlDigSig
 
         return new VerifyResult()
         {
-            IsValid = true,
+            IsValid = areValid,
             HasSignatures = sigs.Count > 0,
             Signatures = sigs,
         };
