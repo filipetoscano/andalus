@@ -10,7 +10,7 @@ public class KeyReferenceTest
     [InlineData( "https://vault/key", KeyType.EcdsaP256, "https://vault/key#EcdsaP256" )]
     public void OpImplicitString_Ok( string id, KeyType type, string expected )
     {
-        var kr = new KeyReference( )
+        var kr = new KeyReference()
         {
             KeyId = id,
             KeyType = type,

@@ -60,7 +60,7 @@ public class Fixture : IAsyncLifetime
     }
 
 
-    
+
 
 
     /// <summary />
@@ -86,5 +86,5 @@ public class Fixture : IAsyncLifetime
         return svc.BuildServiceProvider();
     }
 
-    
+
 }
